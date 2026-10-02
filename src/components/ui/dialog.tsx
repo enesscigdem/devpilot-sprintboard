@@ -71,7 +71,7 @@ export function DialogOverlay({ className = "" }: { className?: string }) {
       data-slot="dialog-overlay"
       aria-hidden="true"
       className={[
-        "fixed inset-0 z-50 bg-zinc-900/30 backdrop-blur-[10px] supports-[backdrop-filter]:bg-zinc-900/20",
+        "fixed inset-0 z-50 bg-zinc-900/20",
         className,
       ]
         .filter(Boolean)
@@ -87,25 +87,36 @@ export type DialogContentProps = React.HTMLAttributes<HTMLDivElement> & {
 export function DialogContent({ className = "", children, hideClose = false, ...props }: DialogContentProps) {
   const { open, setOpen } = useDialogContext("DialogContent")
 
+  const contentRef = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false)
     }
     document.addEventListener("keydown", onKeyDown)
-    return () => document.removeEventListener("keydown", onKeyDown)
+    const frame = requestAnimationFrame(() => contentRef.current?.focus())
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener("keydown", onKeyDown)
+      cancelAnimationFrame(frame)
+    }
   }, [open, setOpen])
 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto p-4 sm:items-center" onClick={() => setOpen(false)}>
       <DialogOverlay />
       <div
+        ref={contentRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
+        onClick={(event) => event.stopPropagation()}
         className={[
-          "relative z-50 w-full max-w-lg rounded-[20px] border border-zinc-200/60 bg-white p-6 text-zinc-800 shadow-[0_24px_64px_rgba(15,23,42,0.18),0_8px_24px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04]",
+          "relative z-50 w-full max-w-lg rounded-[20px] border border-zinc-200/60 bg-white p-6 text-zinc-800 shadow-[0_16px_40px_rgba(15,23,42,0.12),0_4px_16px_rgba(15,23,42,0.06)] ring-1 ring-black/[0.04] outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10",
           className,
         ]
           .filter(Boolean)
