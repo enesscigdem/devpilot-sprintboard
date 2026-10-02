@@ -11,11 +11,17 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 
+import type { TaskPriority } from "@/types/task"
+
 export type NewTaskInput = {
   /** Görev başlığı */
   title: string
   /** İsteğe bağlı açıklama */
   description?: string
+  /** Öncelik */
+  priority?: TaskPriority
+  /** Son tarih */
+  dueDate?: string
 }
 
 export type AddTaskDialogProps = {
@@ -30,6 +36,8 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
   const [internalOpen, setInternalOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
+  const [priority, setPriority] = useState<TaskPriority>("medium")
+  const [dueDate, setDueDate] = useState("")
   const [error, setError] = useState("")
 
   const isControlled = controlledOpen !== undefined
@@ -48,9 +56,16 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
       setError("Başlık gerekli.")
       return
     }
-    onAdd({ title: trimmed, description: description.trim() ? description.trim() : undefined })
+    onAdd({
+      title: trimmed,
+      description: description.trim() ? description.trim() : undefined,
+      priority,
+      dueDate: dueDate || undefined,
+    })
     setTitle("")
     setDescription("")
+    setPriority("medium")
+    setDueDate("")
     setError("")
     setOpen(false)
   }
@@ -106,6 +121,35 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
               rows={3}
               className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[13px] leading-relaxed shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <label htmlFor="new-task-priority" className="text-[13px] font-medium tracking-tight">
+                Öncelik
+              </label>
+              <select
+                id="new-task-priority"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-[13px] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shadow-sm"
+              >
+                <option value="low">Düşük</option>
+                <option value="medium">Normal</option>
+                <option value="high">Yüksek</option>
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="new-task-due-date" className="text-[13px] font-medium tracking-tight">
+                Son tarih <span className="font-normal text-muted-foreground">(isteğe bağlı)</span>
+              </label>
+              <Input
+                id="new-task-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setDueDate(e.target.value)}
+                className="h-10 text-[13px] shadow-sm"
+              />
+            </div>
           </div>
           <DialogFooter className="flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-full">

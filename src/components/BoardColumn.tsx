@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-type ColumnTask = BoardTask & { status?: string };
+export type TaskPriority = "Düşük" | "Normal" | "Yüksek"
 
 export type BoardTask = {
   /** Görev kimliği */
@@ -10,7 +10,17 @@ export type BoardTask = {
   title: string
   /** İsteğe bağlı açıklama */
   description?: string
+  /** Öncelik seviyesi */
+  priority?: TaskPriority | string
+  /** İsteğe bağlı son tarih (YYYY-MM-DD formatında) */
+  dueDate?: string
+  /** Ait olduğu pano kimliği */
+  boardId?: string
+  /** Görev durumu */
+  status?: string
 }
+
+type ColumnTask = BoardTask
 
 export type BoardColumnProps = {
   /** Sütun başlığı (örn. "Yapılacak") */
@@ -59,6 +69,21 @@ export default function BoardColumn({ title, items = [], onDeleteTask, onDropTas
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800">{task.title}</p>
                   {task.description ? <p className="mt-1 text-xs text-slate-500">{task.description}</p> : null}
+                  {(task.priority || task.dueDate) ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                      {task.priority ? (
+                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 font-medium ${task.priority === "Yüksek" ? "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20" : task.priority === "Düşük" ? "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-500/10" : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20"}`}>
+                          {task.priority}
+                        </span>
+                      ) : null}
+                      {task.dueDate ? (
+                        <span className="inline-flex items-center gap-1 text-slate-500">
+                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          {task.dueDate}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {onStatusChange && statusOptions.length > 0 ? (
                     <label className="sr-only" htmlFor={`gorev-durum-${task.id}`}>
                       Durum değiştir

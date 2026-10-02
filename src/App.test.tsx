@@ -221,4 +221,15 @@ describe('App', () => {
     expect(screen.getByLabelText('Devam Ediyor')).toBeInTheDocument()
     expect(screen.getByLabelText('Tamamlandı')).toBeInTheDocument()
   })
+
+  it('eski sprintboard.tasks.v1 kayıtlarını İlk panom panosuna kayıpsız taşır', () => {
+    const legacyTasks = [
+      { id: 'legacy-1', title: 'Eski aktarılan görev', description: 'Eski açıklama', status: 'Yapılacak' }
+    ]
+    window.localStorage.setItem('sprintboard.tasks.v1', JSON.stringify(legacyTasks))
+
+    render(<App />)
+    expect(screen.getByText('Eski aktarılan görev')).toBeInTheDocument()
+    expect(screen.getByText('Eski açıklama')).toBeInTheDocument()
+  })
 })

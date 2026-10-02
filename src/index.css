@@ -79,9 +79,14 @@
   .sb-btn-primary { background: var(--color-accent); color: #fff; border-radius: 10px; box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.2); }
   .sb-btn-primary:hover { background: var(--color-accent-hover); }
   .sb-fade-up { animation: sb-fade-up 320ms var(--sb-ease) both; }
+  .sb-priority-low { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+  .sb-priority-normal { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .sb-priority-high { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .sb-overdue { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
 }
 @keyframes sb-fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (max-width: 900px) {
+  .sb-app { flex-direction: column; }
   .sb-board { padding: 16px 14px 88px; }
   .sb-sidebar { width: 100%; position: sticky; top: 0; z-index: 30; border-right: 0; border-bottom: 1px solid var(--color-border); }
 }
