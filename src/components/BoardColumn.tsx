@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+type ColumnTask = BoardTask & { status?: string };
+
 export type BoardTask = {
   /** Görev kimliği */
   id: string
@@ -16,15 +18,20 @@ export type BoardColumnProps = {
   items?: Array<BoardTask | string>
   /** Görev silme geri çağrısı */
   onDeleteTask?: (id: string) => void
+  onDropTask?: (id: string) => void
+  /** Kart üzerinden durum değiştirme (mobil ve klavye kullanımı) */
+  onStatusChange?: (id: string, status: string) => void
+  /** Durum seçeneğinde sunulacak sütun adları */
+  statusOptions?: readonly string[]
 }
 
-export default function BoardColumn({ title, items = [], onDeleteTask }: BoardColumnProps) {
-  const tasks: BoardTask[] = items.map(
+export default function BoardColumn({ title, items = [], onDeleteTask, onDropTask, onStatusChange, statusOptions = [] }: BoardColumnProps) {
+  const tasks: ColumnTask[] = items.map(
     (item) => (typeof item === "string" ? { id: item, title: item } : item),
   )
 
   return (
-    <Card className="flex flex-col overflow-hidden" aria-label={title}>
+    <Card onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) onDropTask?.(id); }} className="flex flex-col overflow-hidden" aria-label={title}>
       <CardHeader className="flex-row items-center gap-3 space-y-0 border-b border-slate-100 bg-slate-50/50 px-5 py-4">
         <span className="h-2.5 w-2.5 rounded-full bg-blue-500/90 shadow-sm shadow-blue-500/20 ring-4 ring-blue-50" aria-hidden="true" />
         <CardTitle className="text-[13px] font-semibold tracking-tight text-slate-900 antialiased">{title}</CardTitle>
@@ -37,10 +44,38 @@ export default function BoardColumn({ title, items = [], onDeleteTask }: BoardCo
         ) : (
           <ul className="flex flex-col gap-3">
             {tasks.map((task) => (
-              <li key={task.id} className="group flex items-start gap-3 rounded-xl border border-slate-200/70 bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm shadow-slate-200/30 transition-colors hover:border-slate-300 hover:shadow">
+              <li
+                key={task.id}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", task.id);
+                  event.dataTransfer.setData("application/x-task-id", task.id);
+                }}
+                className="group flex cursor-grab items-start gap-3 rounded-xl border border-slate-200/70 bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm shadow-slate-200/30 transition-colors hover:border-slate-300 hover:shadow active:cursor-grabbing"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800">{task.title}</p>
                   {task.description ? <p className="mt-1 text-xs text-slate-500">{task.description}</p> : null}
+                  {onStatusChange && statusOptions.length > 0 ? (
+                    <label className="sr-only" htmlFor={`gorev-durum-${task.id}`}>
+                      Durum değiştir
+                    </label>
+                  ) : null}
+                  {onStatusChange && statusOptions.length > 0 ? (
+                    <select
+                      id={`gorev-durum-${task.id}`}
+                      value={task.status ?? "Yapılacak"}
+                      onChange={(event) => onStatusChange(task.id, event.target.value)}
+                      className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
                 </div>
                <button
                   type="button"
