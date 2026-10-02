@@ -8,6 +8,44 @@
   font-weight: 400;
   color: #1a1a1a;
   background-color: #f5f7fb;
+  /* Color Tokens */
+  --color-bg: #f9fafb;
+  --color-surface: #ffffff;
+  --color-card: #ffffff;
+  --color-text: #1d1d1f;
+  --color-text-secondary: #3a3a3c;
+  --color-text-muted: #6e6e73;
+  --color-border: #e5e7eb;
+  --color-border-light: #f2f2f7;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-light: #eff6ff;
+  --color-accent-subtle: #dbeafe;
+  /* Spacing Tokens */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  /* Radius Tokens */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  /* Shadow Tokens */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07), 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* Premium Style Tokens */
+  --premium-gradient: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  --premium-border: 1px solid var(--color-border-light);
+  --premium-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -59,12 +97,18 @@ body {
 }
 
 .column {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-card, #ffffff);
+  border: var(--premium-border, 1px solid #e5e7eb);
   border-radius: 8px;
   padding: 16px;
   min-height: 220px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+  transition: box-shadow var(--premium-transition, 200ms ease), transform var(--premium-transition, 200ms ease);
+}
+
+.column:hover {
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.07));
+  transform: translateY(-2px);
 }
 
 .column__title {
