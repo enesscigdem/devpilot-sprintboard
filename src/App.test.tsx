@@ -184,4 +184,41 @@ describe('App', () => {
     expect(screen.queryByText('Kopya görev')).not.toBeInTheDocument()
     expect(yapilacak.getByText('1')).toBeInTheDocument()
   })
+
+  it('sidebar filtresi yalnızca seçilen durumdaki görevleri gösterir', () => {
+    window.localStorage.setItem(
+      'sprintboard.tasks.v1',
+      JSON.stringify({
+        tasks: [
+          { id: 'gorev-1', title: 'Tasarım görevi', status: 'Yapılacak' },
+          { id: 'gorev-2', title: 'Kodlama görevi', status: 'Devam Ediyor' },
+          { id: 'gorev-3', title: 'Yayın görevi', status: 'Tamamlandı' },
+        ],
+      }),
+    )
+    render(<App />)
+    const sidebar = within(screen.getByLabelText('Görev filtreleri'))
+    expect(screen.getAllByText('Bu sütunda henüz kart yok.')).toHaveLength(0)
+    fireEvent.click(sidebar.getByRole('button', { name: /Devam Ediyor/ }))
+    expect(screen.getByText('Kodlama görevi')).toBeInTheDocument()
+    expect(screen.queryByText('Tasarım görevi')).not.toBeInTheDocument()
+    expect(screen.queryByText('Yayın görevi')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Bu sütunda henüz kart yok.')).toHaveLength(2)
+    fireEvent.click(sidebar.getByRole('button', { name: /Tümü/ }))
+    expect(screen.getByText('Tasarım görevi')).toBeInTheDocument()
+    expect(screen.getByText('Kodlama görevi')).toBeInTheDocument()
+    expect(screen.getByText('Yayın görevi')).toBeInTheDocument()
+  })
+
+  it('sidebar filtrelerini ve sütun yüzeylerini erişilebilir etiketlerle sunar', () => {
+    render(<App />)
+    const sidebar = screen.getByLabelText('Görev filtreleri')
+    expect(sidebar.tagName).toBe('ASIDE')
+    expect(within(sidebar).getByRole('button', { name: /Tümü/ })).toHaveAttribute('aria-current', 'true')
+    expect(within(sidebar).getByRole('button', { name: /Tamamlandı/ })).not.toHaveAttribute('aria-current', 'true')
+    expect(within(sidebar).getByRole('button', { name: /Yeni görev/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('Yapılacak')).toBeInTheDocument()
+    expect(screen.getByLabelText('Devam Ediyor')).toBeInTheDocument()
+    expect(screen.getByLabelText('Tamamlandı')).toBeInTheDocument()
+  })
 })

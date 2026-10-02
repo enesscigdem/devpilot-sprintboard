@@ -1,7 +1,7 @@
 import * as React from "react"
 
-export type ButtonVariant = "default" | "outline" | "ghost" | "destructive"
-export type ButtonSize = "default" | "sm" | "icon"
+export type ButtonVariant = "default" | "secondary" | "outline" | "ghost" | "destructive" | "subtle"
+export type ButtonSize = "default" | "sm" | "lg" | "icon"
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
@@ -9,18 +9,21 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]"
 
 const variantClasses: Record<ButtonVariant, string> = {
-  default: "bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700",
-  outline: "border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50",
-  ghost: "text-slate-600 hover:bg-slate-100",
-  destructive: "bg-rose-600 text-white shadow-sm hover:bg-rose-700",
+  default: "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 active:bg-zinc-900",
+  secondary: "bg-white text-zinc-900 border border-zinc-200 shadow-sm hover:bg-zinc-50",
+  outline: "border border-zinc-200 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50",
+  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+  destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-700",
+  subtle: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  default: "h-10 px-4 py-2",
-  sm: "h-9 px-3",
+  default: "h-9 px-4 py-2",
+  sm: "h-8 px-3 text-xs",
+  lg: "h-10 px-6",
   icon: "h-8 w-8",
 }
 

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type ColumnTask = BoardTask & { status?: string };
@@ -26,12 +27,13 @@ export type BoardColumnProps = {
 }
 
 export default function BoardColumn({ title, items = [], onDeleteTask, onDropTask, onStatusChange, statusOptions = [] }: BoardColumnProps) {
+  const [isOver, setIsOver] = useState(false)
   const tasks: ColumnTask[] = items.map(
     (item) => (typeof item === "string" ? { id: item, title: item } : item),
   )
 
   return (
-    <Card onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) onDropTask?.(id); }} className="flex flex-col overflow-hidden" aria-label={title}>
+    <Card onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setIsOver(true); }} onDragLeave={() => setIsOver(false)} onDrop={(e) => { e.preventDefault(); setIsOver(false); const id = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("application/x-task-id"); if (id) onDropTask?.(id); }} className={`flex min-h-[280px] flex-col overflow-hidden rounded-2xl transition-all duration-200 ${isOver ? "border-blue-400/60 bg-blue-50/40 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20" : ""}`} aria-label={title} data-drag-over={isOver ? "true" : undefined}>
       <CardHeader className="flex-row items-center gap-3 space-y-0 border-b border-slate-100 bg-slate-50/50 px-5 py-4">
         <span className="h-2.5 w-2.5 rounded-full bg-blue-500/90 shadow-sm shadow-blue-500/20 ring-4 ring-blue-50" aria-hidden="true" />
         <CardTitle className="text-[13px] font-semibold tracking-tight text-slate-900 antialiased">{title}</CardTitle>
@@ -52,7 +54,7 @@ export default function BoardColumn({ title, items = [], onDeleteTask, onDropTas
                   event.dataTransfer.setData("text/plain", task.id);
                   event.dataTransfer.setData("application/x-task-id", task.id);
                 }}
-                className="group flex cursor-grab items-start gap-3 rounded-xl border border-slate-200/70 bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm shadow-slate-200/30 transition-colors hover:border-slate-300 hover:shadow active:cursor-grabbing"
+                className="group flex cursor-grab items-start gap-2.5 rounded-xl border border-slate-200/60 bg-white p-3 text-sm leading-6 text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-150 hover:-translate-y-px hover:border-slate-300/80 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] active:cursor-grabbing"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800">{task.title}</p>
@@ -67,7 +69,7 @@ export default function BoardColumn({ title, items = [], onDeleteTask, onDropTas
                       id={`gorev-durum-${task.id}`}
                       value={task.status ?? "Yapılacak"}
                       onChange={(event) => onStatusChange(task.id, event.target.value)}
-                      className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      className="mt-2 w-auto max-w-full cursor-pointer appearance-none rounded-full border border-slate-200/80 bg-slate-50 py-1 pl-2.5 pr-7 text-[11px] font-medium text-slate-500 transition hover:border-slate-300 hover:bg-white hover:text-slate-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                     >
                       {statusOptions.map((option) => (
                         <option key={option} value={option}>

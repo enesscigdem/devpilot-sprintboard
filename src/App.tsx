@@ -69,6 +69,7 @@ export default function App() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<ColumnStatus | "Tümü">("Tümü");
 
   useEffect(() => {
     try {
@@ -115,7 +116,13 @@ export default function App() {
   };
 
   const tasksIn = (status: ColumnStatus) =>
-    tasks.filter((task) => task.status === status);
+    tasks.filter(
+      (task) =>
+        task.status === status && (filter === "Tümü" || task.status === filter),
+    );
+
+  const countIn = (status: ColumnStatus) =>
+    tasks.filter((task) => task.status === status).length;
 
   const handleMoveTask = (status: ColumnStatus) => (id: string) => {
     setTasks((prev) =>
@@ -131,7 +138,48 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fb] font-sans antialiased selection:bg-blue-100">
+    <div className="sb-app font-sans antialiased selection:bg-blue-100">
+      <aside
+        className="sb-sidebar flex flex-col gap-1 px-3 py-5 max-[900px]:flex-row max-[900px]:items-center max-[900px]:gap-2 max-[900px]:overflow-x-auto max-[900px]:px-4"
+        aria-label="Görev filtreleri"
+      >
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 max-[900px]:hidden">
+          Panolar
+        </p>
+        {(["Tümü", ...COLUMN_STATUSES] as const).map((option) => {
+          const active = filter === option;
+          const count = option === "Tümü" ? tasks.length : countIn(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              data-filter={option}
+              data-active={active ? "true" : undefined}
+              aria-current={active}
+              onClick={() => setFilter(option)}
+              className="flex w-full shrink-0 items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium text-slate-600 hover:bg-slate-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+            >
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-blue-600" : "bg-slate-300"}`}
+                aria-hidden="true"
+              />
+              <span className="truncate">{option}</span>
+              <span className="ml-auto text-[11px] tabular-nums text-slate-400">
+                {count}
+              </span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => handleOpenChange(true)}
+          className="sb-btn-primary mt-4 flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-white transition max-[900px]:mt-0 max-[900px]:w-auto"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          Yeni görev
+        </button>
+      </aside>
+      <div className="flex min-w-0 flex-1 flex-col">
       <header className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-6 py-5 md:px-8">
           <div className="flex items-center gap-3.5">
@@ -220,7 +268,7 @@ export default function App() {
           </form>
         </DialogContent>
       </Dialog>
-      <div className="mx-auto max-w-[1280px] px-6 py-8 md:px-8 md:py-10">
+      <div className="sb-board w-full">
         <div className="mb-8 flex flex-col gap-1">
           <h2 className="text-lg font-semibold tracking-tight text-slate-900">Panonuz</h2>
           <p className="max-w-2xl text-sm leading-6 text-slate-500 sm:hidden">Sprintlerinizi planlayın, önceliklendirin ve ilerlemeyi takip edin.</p>
@@ -252,6 +300,7 @@ export default function App() {
             onStatusChange={handleStatusChange}
           />
         </main>
+      </div>
       </div>
     </div>
   );
