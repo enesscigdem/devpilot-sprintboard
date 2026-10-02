@@ -1,5 +1,5 @@
 import "./index.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BoardColumn, { type BoardTask } from "./components/BoardColumn";
 import {
   Dialog,
@@ -10,17 +10,73 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+const COLUMN_STATUSES = ["Yapılacak", "Devam Ediyor", "Tamamlandı"] as const;
+
+type ColumnStatus = (typeof COLUMN_STATUSES)[number];
+
+type StoredTask = BoardTask & { status: ColumnStatus };
+
+const STORAGE_KEY = "sprintboard.tasks.v1";
+
+const isColumnStatus = (value: unknown): value is ColumnStatus =>
+  typeof value === "string" &&
+  (COLUMN_STATUSES as readonly string[]).includes(value);
+
+/** Bozuk veya eski kayıtları yok sayarak görev listesini geri yükler. */
+const loadTasks = (): StoredTask[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    const list: unknown[] = Array.isArray(parsed)
+      ? parsed
+      : parsed && typeof parsed === "object" && Array.isArray((parsed as { tasks?: unknown }).tasks)
+        ? ((parsed as { tasks: unknown[] }).tasks)
+        : [];
+    const seen = new Set<string>();
+    const result: StoredTask[] = [];
+    for (const entry of list) {
+      if (!entry || typeof entry !== "object") continue;
+      const record = entry as Record<string, unknown>;
+      const id = typeof record.id === "string" ? record.id : "";
+      const title = typeof record.title === "string" ? record.title.trim() : "";
+      if (!id || !title || seen.has(id)) continue;
+      seen.add(id);
+      const description =
+        typeof record.description === "string" ? record.description.trim() : "";
+      result.push({
+        id,
+        title,
+        ...(description ? { description } : {}),
+        status: isColumnStatus(record.status) ? record.status : "Yapılacak",
+      });
+    }
+    return result;
+  } catch {
+    return [];
+  }
+};
+
 const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `gorev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export default function App() {
-  const [tasks, setTasks] = useState<BoardTask[]>([]);
+  const [tasks, setTasks] = useState<StoredTask[]>(loadTasks);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    } catch {
+      // Kota dolu veya depolama erişimi kapalıysa panoyu sessizce kullanmaya devam et.
+    }
+  }, [tasks]);
 
   const resetForm = () => {
     setTitle("");
@@ -47,6 +103,7 @@ export default function App() {
         id: newId(),
         title: cleanTitle,
         ...(cleanDescription ? { description: cleanDescription } : {}),
+        status: "Yapılacak",
       },
     ]);
     resetForm();
@@ -55,6 +112,22 @@ export default function App() {
 
   const handleDelete = (id: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
+  };
+
+  const tasksIn = (status: ColumnStatus) =>
+    tasks.filter((task) => task.status === status);
+
+  const handleMoveTask = (status: ColumnStatus) => (id: string) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id && task.status !== status ? { ...task, status } : task,
+      ),
+    );
+  };
+
+  const handleStatusChange = (id: string, status: string) => {
+    if (!isColumnStatus(status)) return;
+    handleMoveTask(status)(id);
   };
 
   return (
@@ -154,9 +227,30 @@ export default function App() {
           <p className="hidden max-w-2xl text-sm leading-6 text-slate-500 sm:block">Görevlerinizi üç aşamada takip edin — sade, odaklı ve her cihazda tutarlı.</p>
         </div>
         <main className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start">
-          <BoardColumn title="Yapılacak" items={tasks} onDeleteTask={handleDelete} />
-          <BoardColumn title="Devam Ediyor" onDeleteTask={handleDelete} />
-          <BoardColumn title="Tamamlandı" onDeleteTask={handleDelete} />
+          <BoardColumn
+            title="Yapılacak"
+            items={tasksIn("Yapılacak")}
+            onDeleteTask={handleDelete}
+            onDropTask={handleMoveTask("Yapılacak")}
+            statusOptions={COLUMN_STATUSES}
+            onStatusChange={handleStatusChange}
+          />
+          <BoardColumn
+            title="Devam Ediyor"
+            items={tasksIn("Devam Ediyor")}
+            onDeleteTask={handleDelete}
+            onDropTask={handleMoveTask("Devam Ediyor")}
+            statusOptions={COLUMN_STATUSES}
+            onStatusChange={handleStatusChange}
+          />
+          <BoardColumn
+            title="Tamamlandı"
+            items={tasksIn("Tamamlandı")}
+            onDeleteTask={handleDelete}
+            onDropTask={handleMoveTask("Tamamlandı")}
+            statusOptions={COLUMN_STATUSES}
+            onStatusChange={handleStatusChange}
+          />
         </main>
       </div>
     </div>
