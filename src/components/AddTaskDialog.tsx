@@ -23,9 +23,10 @@ export type AddTaskDialogProps = {
   onAdd: (input: NewTaskInput) => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  trigger?: React.ReactNode
 }
 
-export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChange }: AddTaskDialogProps) {
+export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChange, trigger }: AddTaskDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -56,9 +57,15 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button">Yeni görev</Button>
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : (
+        <DialogTrigger asChild>
+          <Button type="button" className="gap-1.5 shadow-sm">
+            Yeni görev
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md rounded-2xl border-border/60 bg-card p-6 shadow-2xl animate-in fade-in-0 zoom-in-95">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-semibold tracking-tight">Yeni görev ekle</DialogTitle>

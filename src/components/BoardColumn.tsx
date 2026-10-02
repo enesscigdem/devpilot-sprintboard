@@ -33,7 +33,7 @@ export default function BoardColumn({ title, items = [], onDeleteTask, onDropTas
   )
 
   return (
-    <Card onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setIsOver(true); }} onDragLeave={() => setIsOver(false)} onDrop={(e) => { e.preventDefault(); setIsOver(false); const id = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("application/x-task-id"); if (id) onDropTask?.(id); }} className={`flex min-h-[280px] flex-col overflow-hidden rounded-2xl transition-all duration-200 ${isOver ? "border-blue-400/60 bg-blue-50/40 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20" : ""}`} aria-label={title} data-drag-over={isOver ? "true" : undefined}>
+    <Card onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setIsOver(true); }} onDragLeave={() => setIsOver(false)} onDrop={(e) => { e.preventDefault(); setIsOver(false); const id = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("application/x-task-id"); if (id) onDropTask?.(id); }} className={`flex min-h-[280px] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/30 shadow-sm transition-all duration-200 ${isOver ? "border-blue-400/60 bg-blue-50/40 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20" : ""}`} aria-label={title} data-drag-over={isOver ? "true" : undefined}>
       <CardHeader className="flex-row items-center gap-3 space-y-0 border-b border-slate-100 bg-slate-50/50 px-5 py-4">
         <span className="h-2.5 w-2.5 rounded-full bg-blue-500/90 shadow-sm shadow-blue-500/20 ring-4 ring-blue-50" aria-hidden="true" />
         <CardTitle className="text-[13px] font-semibold tracking-tight text-slate-900 antialiased">{title}</CardTitle>
