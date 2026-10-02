@@ -71,7 +71,7 @@ export function DialogOverlay({ className = "" }: { className?: string }) {
       data-slot="dialog-overlay"
       aria-hidden="true"
       className={[
-        "fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px]",
+        "fixed inset-0 z-50 bg-zinc-900/30 backdrop-blur-[10px] supports-[backdrop-filter]:bg-zinc-900/20",
         className,
       ]
         .filter(Boolean)
@@ -105,7 +105,7 @@ export function DialogContent({ className = "", children, hideClose = false, ...
         role="dialog"
         aria-modal="true"
         className={[
-          "relative z-50 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 text-slate-800 shadow-xl",
+          "relative z-50 w-full max-w-lg rounded-[20px] border border-zinc-200/60 bg-white p-6 text-zinc-800 shadow-[0_24px_64px_rgba(15,23,42,0.18),0_8px_24px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04]",
           className,
         ]
           .filter(Boolean)
@@ -118,7 +118,7 @@ export function DialogContent({ className = "", children, hideClose = false, ...
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Kapat"
-            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-400 shadow-sm ring-1 ring-zinc-200/70 transition hover:bg-zinc-50 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/15"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
@@ -137,7 +137,7 @@ export function DialogHeader({ className = "", ...props }: React.HTMLAttributes<
 export function DialogFooter({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={["mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className].filter(Boolean).join(" ")}
+      className={["mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end", className].filter(Boolean).join(" ")}
       {...props}
     />
   )
@@ -146,12 +146,12 @@ export function DialogFooter({ className = "", ...props }: React.HTMLAttributes<
 export function DialogTitle({ className = "", ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={["text-base font-semibold tracking-tight text-slate-900", className].filter(Boolean).join(" ")}
+      className={["text-[15px] font-semibold tracking-[-0.015em] text-zinc-900", className].filter(Boolean).join(" ")}
       {...props}
     />
   )
 }
 
 export function DialogDescription({ className = "", ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={["text-sm leading-6 text-slate-500", className].filter(Boolean).join(" ")} {...props} />
+  return <p className={["text-[13px] leading-6 text-zinc-500", className].filter(Boolean).join(" ")} {...props} />
 }

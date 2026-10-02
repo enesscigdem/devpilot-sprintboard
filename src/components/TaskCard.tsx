@@ -4,6 +4,18 @@ import { Trash2 } from "lucide-react"
 
 export type TaskStatus = "todo" | "inProgress" | "done"
 
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  todo: "Yapılacak",
+  inProgress: "Devam Ediyor",
+  done: "Tamamlandı",
+}
+
+const STATUS_SHORT_LABELS: Record<TaskStatus, string> = {
+  todo: "Yapılacak",
+  inProgress: "Devam",
+  done: "Tamam",
+}
+
 export type Task = {
   id: string
   title: string
@@ -24,6 +36,26 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
     onStatusChange?.(task.id, next)
     onMove?.(task.id, next)
   }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!(onStatusChange || onMove)) return
+    if (e.target !== e.currentTarget) return
+    const order: TaskStatus[] = ["todo", "inProgress", "done"]
+    const current = task.status ?? "todo"
+    if (e.key === "1" || e.key === "2" || e.key === "3") {
+      e.preventDefault()
+      handleStatusChange(order[Number(e.key) - 1])
+      return
+    }
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault()
+      handleStatusChange(order[(order.indexOf(current) + 1) % order.length])
+      return
+    }
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault()
+      handleStatusChange(order[(order.indexOf(current) + order.length - 1) % order.length])
+    }
+  }
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.effectAllowed = "move"
     e.dataTransfer.setData("text/plain", task.id)
@@ -35,7 +67,9 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
       onDragStart={handleDragStart}
       data-status={task.status ?? "todo"}
       aria-grabbed={isDragging ? true : undefined}
-      className={`group border-border/60 bg-card/80 shadow-sm backdrop-blur transition-colors hover:border-primary/40 hover:bg-card cursor-grab active:cursor-grabbing ${isDragging ? "opacity-60 ring-2 ring-primary/30 scale-[0.98] shadow-md" : ""}`}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className={`group rounded-xl border border-border/60 bg-card/80 shadow-sm backdrop-blur transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 focus-visible:ring-offset-background cursor-grab active:cursor-grabbing ${isDragging ? "opacity-60 ring-2 ring-primary/30 scale-[0.98] shadow-md" : ""}`}
       aria-label={task.title}
       data-testid={`task-card-${task.id}`}
     >
@@ -58,6 +92,29 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
       </CardHeader>
       {(onStatusChange || onMove) ? (
         <div className="px-4 pb-2">
+          <div
+            role="group"
+            aria-label="Durum değiştir"
+            className="inline-flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5"
+          >
+            {(["todo", "inProgress", "done"] as TaskStatus[]).map((status) => (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={(task.status ?? "todo") === status}
+                aria-label={`Durumu ${STATUS_LABELS[status]} yap`}
+                data-testid={`task-status-option-${task.id}-${status}`}
+                onClick={() => handleStatusChange(status)}
+                className={`rounded-md px-2 py-1 text-[11px] font-medium leading-none transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                  (task.status ?? "todo") === status
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                }`}
+              >
+                {STATUS_SHORT_LABELS[status]}
+              </button>
+            ))}
+          </div>
           <label htmlFor={`task-status-${task.id}`} className="sr-only">
             Durum değiştir
           </label>
@@ -67,7 +124,7 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
             onChange={(e) => handleStatusChange(e.target.value as TaskStatus)}
             aria-label="Durum değiştir"
             data-testid={`task-status-select-${task.id}`}
-            className="w-full rounded-md border border-border/60 bg-background px-2 py-1.5 text-xs font-medium text-foreground shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="sr-only w-full rounded-md border border-border/60 bg-background px-2 py-1.5 text-xs font-medium text-foreground shadow-sm transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="todo">Yapılacak</option>
             <option value="inProgress">Devam Ediyor</option>

@@ -59,14 +59,14 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
       <DialogTrigger asChild>
         <Button type="button">Yeni görev</Button>
       </DialogTrigger>
-      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md rounded-2xl border-border/60 bg-card p-6 shadow-2xl animate-in fade-in-0 zoom-in-95">
         <DialogHeader>
-          <DialogTitle>Yeni görev ekle</DialogTitle>
-          <DialogDescription>Yapılacak sütununa eklenecek görevi yazın.</DialogDescription>
+          <DialogTitle className="text-[17px] font-semibold tracking-tight">Yeni görev ekle</DialogTitle>
+          <DialogDescription className="text-[13px] leading-relaxed text-muted-foreground">Yapılacak sütununa eklenecek görevi yazın.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <form onSubmit={handleSubmit} className="grid gap-5 pt-1">
           <div className="grid gap-2">
-            <label htmlFor="new-task-title" className="text-sm font-medium">
+            <label htmlFor="new-task-title" className="text-[13px] font-medium tracking-tight">
               Başlık
             </label>
             <Input
@@ -97,14 +97,14 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
               placeholder="Kısa bir açıklama ekleyin"
               rows={3}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[13px] leading-relaxed shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
           </div>
-          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <DialogFooter className="flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-full">
               Vazgeç
             </Button>
-            <Button type="submit">Ekle</Button>
+            <Button type="submit" className="rounded-full px-5 shadow-sm">Ekle</Button>
           </DialogFooter>
         </form>
       </DialogContent>
