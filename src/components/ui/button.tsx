@@ -9,22 +9,22 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]"
+  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]"
 
 const variantClasses: Record<ButtonVariant, string> = {
-  default: "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 active:bg-zinc-900",
-  secondary: "bg-white text-zinc-900 border border-zinc-200 shadow-sm hover:bg-zinc-50",
-  outline: "border border-zinc-200 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50",
-  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
-  destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-700",
-  subtle: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+  default: "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 active:bg-zinc-900 focus-visible:ring-zinc-900",
+  secondary: "bg-white text-zinc-900 border border-zinc-200 shadow-sm hover:bg-zinc-50 active:bg-zinc-100",
+  outline: "border border-zinc-200 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50 active:bg-zinc-100",
+  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200/70",
+  destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-700 focus-visible:ring-red-600",
+  subtle: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 active:bg-zinc-300/80",
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
   default: "h-9 px-4 py-2",
   sm: "h-8 px-3 text-xs",
-  lg: "h-10 px-6",
-  icon: "h-8 w-8",
+  lg: "h-10 px-6 text-base",
+  icon: "h-9 w-9 p-0 shrink-0",
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(

@@ -143,8 +143,14 @@ export default function App() {
         className="sb-sidebar flex flex-col gap-1 px-3 py-5 max-[900px]:flex-row max-[900px]:items-center max-[900px]:gap-2 max-[900px]:overflow-x-auto max-[900px]:px-4"
         aria-label="Görev filtreleri"
       >
+        <div className="flex items-center gap-2.5 px-3 pb-4 pt-1 max-[900px]:hidden">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M8 9h8M8 12h8M8 15h5" /></svg>
+          </span>
+          <span className="text-sm font-semibold tracking-tight text-slate-900">SprintBoard</span>
+        </div>
         <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 max-[900px]:hidden">
-          Panolar
+          Filtreler
         </p>
         {(["Tümü", ...COLUMN_STATUSES] as const).map((option) => {
           const active = filter === option;
