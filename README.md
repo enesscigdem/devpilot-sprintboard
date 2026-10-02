@@ -14,6 +14,35 @@ Türkçe arayüzde görev oluşturma, düzenleme, silme ve Yapılacak / Devam Ed
 - Kalıcı saklama sonraki görevde localStorage ile eklenecek
 - Canlı yayın için GitHub reposuna bağlı Vercel kullanılacak
 
+## Kurulum
+
+Gereksinimler: Node.js 20+ ve npm.
+
+```bash
+npm install
+```
+
+## Çalıştırma
+
+Geliştirme sunucusunu başlatmak için:
+
+```bash
+npm run dev
+```
+
+Üretim derlemesi ve önizleme:
+
+```bash
+npm run build
+npm run preview
+```
+
+## Test
+
+```bash
+npm test
+```
+
 ## Geliştirme sırası
 
 1. Minimal çalışabilir iskelet ve test altyapısı
