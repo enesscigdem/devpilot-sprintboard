@@ -19,8 +19,8 @@ export type BoardColumnProps = {
 }
 
 export default function BoardColumn({ title, items = [], onDeleteTask }: BoardColumnProps) {
-  const tasks: BoardTask[] = items.map((item, index) =>
-    typeof item === "string" ? { id: item, title: item } : { ...item, id: item.id || `${item.title}-${index}` },
+  const tasks: BoardTask[] = items.map(
+    (item) => (typeof item === "string" ? { id: item, title: item } : item),
   )
 
   return (
@@ -36,7 +36,7 @@ export default function BoardColumn({ title, items = [], onDeleteTask }: BoardCo
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center"><span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg></span><p className="text-sm font-medium text-slate-500">Bu sütunda henüz kart yok.</p></div>
         ) : (
           <ul className="flex flex-col gap-3">
-            {tasks.map((task, index) => (
+            {tasks.map((task) => (
               <li key={task.id} className="group flex items-start gap-3 rounded-xl border border-slate-200/70 bg-white p-4 text-sm leading-6 text-slate-700 shadow-sm shadow-slate-200/30 transition-colors hover:border-slate-300 hover:shadow">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-slate-800">{task.title}</p>
