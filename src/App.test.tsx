@@ -210,15 +210,26 @@ describe('App', () => {
     expect(screen.getByText('Yayın görevi')).toBeInTheDocument()
   })
 
-  it('sidebar filtrelerini ve sütun yüzeylerini erişilebilir etiketlerle sunar', () => {
+  it('sidebar yalnızca pano listesini sunar ve filtreleri araç çubuğuna taşır', () => {
     render(<App />)
-    const sidebar = screen.getByLabelText('Görev filtreleri')
+    const sidebar = screen.getByLabelText('Panolar')
     expect(sidebar.tagName).toBe('ASIDE')
-    expect(within(sidebar).getByRole('button', { name: /Tümü/ })).toHaveAttribute('aria-current', 'true')
-    expect(within(sidebar).getByRole('button', { name: /Tamamlandı/ })).not.toHaveAttribute('aria-current', 'true')
-    expect(within(sidebar).getByRole('button', { name: /Yeni görev/ })).toBeInTheDocument()
-    expect(screen.getByLabelText('Yapılacak')).toBeInTheDocument()
-    expect(screen.getByLabelText('Devam Ediyor')).toBeInTheDocument()
-    expect(screen.getByLabelText('Tamamlandı')).toBeInTheDocument()
+    expect(within(sidebar).getByRole('button', { name: /Sprint 1/ })).toHaveAttribute('aria-current', 'true')
+    expect(within(sidebar).queryByRole('button', { name: /Tümü/ })).not.toBeInTheDocument()
+    expect(within(sidebar).queryByRole('button', { name: /Yeni görev/ })).not.toBeInTheDocument()
+
+    const toolbar = screen.getByRole('group', { name: 'Duruma göre filtrele' })
+    expect(within(toolbar).getByRole('button', { name: 'Tümü' })).toHaveAttribute('aria-current', 'true')
+    expect(within(toolbar).getByRole('button', { name: 'Tamamlandı' })).toHaveAttribute('aria-current', 'false')
+    expect(screen.getByLabelText('Görevlerde ara')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Sprint 1' })).toBeInTheDocument()
+    expect(screen.getByText('Henüz görev yok')).toBeInTheDocument()
+  })
+
+  it('sütun başlıklarında sade sayaç ve sütuna görev ekleme aksiyonu sunar', () => {
+    render(<App />)
+    expect(screen.getByRole('button', { name: 'Yapılacak sütununa görev ekle' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Devam Ediyor sütununa görev ekle' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tamamlandı sütununa görev ekle' })).toBeInTheDocument()
   })
 })

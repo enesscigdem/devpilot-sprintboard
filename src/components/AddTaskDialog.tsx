@@ -66,7 +66,7 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md rounded-2xl border-border/60 bg-card p-6 shadow-2xl animate-in fade-in-0 zoom-in-95">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md rounded-xl border-border bg-card p-6 shadow-lg animate-in fade-in-0 zoom-in-95">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-semibold tracking-tight">Yeni görev ekle</DialogTitle>
           <DialogDescription className="text-[13px] leading-relaxed text-muted-foreground">Yapılacak sütununa eklenecek görevi yazın.</DialogDescription>
@@ -95,7 +95,7 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
             ) : null}
           </div>
           <div className="grid gap-2">
-            <label htmlFor="new-task-description" className="text-sm font-medium">
+            <label htmlFor="new-task-description" className="text-[13px] font-medium tracking-tight">
               Açıklama <span className="font-normal text-muted-foreground">(isteğe bağlı)</span>
             </label>
             <textarea
@@ -108,10 +108,10 @@ export default function AddTaskDialog({ onAdd, open: controlledOpen, onOpenChang
             />
           </div>
           <DialogFooter className="flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-full">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-lg">
               Vazgeç
             </Button>
-            <Button type="submit" className="rounded-full px-5 shadow-sm">Ekle</Button>
+            <Button type="submit" className="rounded-lg px-5">Ekle</Button>
           </DialogFooter>
         </form>
       </DialogContent>

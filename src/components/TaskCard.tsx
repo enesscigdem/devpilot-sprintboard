@@ -21,6 +21,10 @@ export type Task = {
   title: string
   description?: string
   status?: TaskStatus
+  priority?: "low" | "medium" | "high"
+  dueDate?: string
+  due_date?: string
+  date?: string
 }
 
 export type TaskCardProps = {
@@ -69,7 +73,7 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
       aria-grabbed={isDragging ? true : undefined}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`group rounded-xl border border-border/60 bg-card/80 shadow-sm backdrop-blur transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 focus-visible:ring-offset-background cursor-grab active:cursor-grabbing ${isDragging ? "opacity-60 ring-2 ring-primary/30 scale-[0.98] shadow-md" : ""}`}
+      className={`group rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors transition-shadow duration-200 ease-out hover:border-border hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-grab active:cursor-grabbing ${isDragging ? "opacity-95 ring-2 ring-primary/20 shadow-[0_8px_24px_rgba(0,0,0,0.10)] rotate-[0.4deg] scale-[1.01]" : ""}`}
       aria-label={task.title}
       data-testid={`task-card-${task.id}`}
     >
@@ -132,11 +136,19 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
           </select>
         </div>
       ) : null}
-      {task.description ? (
+      {task.description || (task as { priority?: string }).priority || (task as { dueDate?: string }).dueDate || (task as { due_date?: string }).due_date || (task as { date?: string }).date ? (
         <CardContent className="p-4 pt-0">
-          <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-            {task.description}
-          </p>
+          {task.description ? (
+            <p className="line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-muted-foreground">
+              {task.description}
+            </p>
+          ) : null}
+          {((task as { priority?: string }).priority || (task as { dueDate?: string }).dueDate || (task as { due_date?: string }).due_date || (task as { date?: string }).date) ? (
+            <p className="mt-2 flex items-center gap-2 text-[11px] font-medium leading-none text-muted-foreground/80">
+              {(task as { priority?: string }).priority ? <span className="rounded bg-muted px-1.5 py-0.5 capitalize">{(task as { priority?: string }).priority}</span> : null}
+              {(task as { dueDate?: string }).dueDate || (task as { due_date?: string }).due_date || (task as { date?: string }).date ? <span>{(task as { dueDate?: string }).dueDate ?? (task as { due_date?: string }).due_date ?? (task as { date?: string }).date}</span> : null}
+            </p>
+          ) : null}
         </CardContent>
       ) : null}
     </Card>

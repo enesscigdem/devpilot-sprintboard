@@ -70,6 +70,8 @@ export default function App() {
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ColumnStatus | "Tümü">("Tümü");
+  const [query, setQuery] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -115,14 +117,26 @@ export default function App() {
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
-  const tasksIn = (status: ColumnStatus) =>
-    tasks.filter(
-      (task) =>
-        task.status === status && (filter === "Tümü" || task.status === filter),
+  const matchesQuery = (task: StoredTask) => {
+    const needle = query.trim().toLocaleLowerCase("tr");
+    if (!needle) return true;
+    return (
+      task.title.toLocaleLowerCase("tr").includes(needle) ||
+      (task.description ?? "").toLocaleLowerCase("tr").includes(needle)
     );
+  };
+
+  const tasksIn = (status: ColumnStatus) =>
+    tasks.filter((task) => task.status === status && matchesQuery(task));
 
   const countIn = (status: ColumnStatus) =>
     tasks.filter((task) => task.status === status).length;
+
+  const doneCount = countIn("Tamamlandı");
+  const summaryLabel =
+    tasks.length === 0
+      ? "Henüz görev yok"
+      : `${tasks.length} görev · ${doneCount} tamamlandı`;
 
   const handleMoveTask = (status: ColumnStatus) => (id: string) => {
     setTasks((prev) =>
@@ -140,65 +154,52 @@ export default function App() {
   return (
     <div className="sb-app font-sans antialiased selection:bg-blue-100">
       <aside
-        className="sb-sidebar flex flex-col gap-1 px-3 py-5 max-[900px]:flex-row max-[900px]:items-center max-[900px]:gap-2 max-[900px]:overflow-x-auto max-[900px]:px-4"
-        aria-label="Görev filtreleri"
+        className={`sb-sidebar flex flex-col gap-1 px-3 py-5 max-[900px]:fixed max-[900px]:inset-x-3 max-[900px]:top-16 max-[900px]:z-50 max-[900px]:rounded-2xl max-[900px]:border max-[900px]:border-slate-200 max-[900px]:shadow-lg ${sidebarOpen ? "max-[900px]:block" : "max-[900px]:hidden"}`}
+        aria-label="Panolar"
       >
-        <div className="flex items-center gap-2.5 px-3 pb-4 pt-1 max-[900px]:hidden">
+        <div className="flex items-center gap-2.5 px-3 pb-5 pt-1">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M8 9h8M8 12h8M8 15h5" /></svg>
           </span>
           <span className="text-sm font-semibold tracking-tight text-slate-900">SprintBoard</span>
         </div>
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 max-[900px]:hidden">
-          Filtreler
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+          Panolar
         </p>
-        {(["Tümü", ...COLUMN_STATUSES] as const).map((option) => {
-          const active = filter === option;
-          const count = option === "Tümü" ? tasks.length : countIn(option);
-          return (
-            <button
-              key={option}
-              type="button"
-              data-filter={option}
-              data-active={active ? "true" : undefined}
-              aria-current={active}
-              onClick={() => setFilter(option)}
-              className="flex w-full shrink-0 items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium text-slate-600 hover:bg-slate-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-            >
-              <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? "bg-blue-600" : "bg-slate-300"}`}
-                aria-hidden="true"
-              />
-              <span className="truncate">{option}</span>
-              <span className="ml-auto text-[11px] tabular-nums text-slate-400">
-                {count}
-              </span>
-            </button>
-          );
-        })}
         <button
           type="button"
-          onClick={() => handleOpenChange(true)}
-          className="sb-btn-primary mt-4 flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-white transition max-[900px]:mt-0 max-[900px]:w-auto"
+          data-active="true"
+          aria-current="true"
+          onClick={() => setSidebarOpen(false)}
+          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-semibold text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-          Yeni görev
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" aria-hidden="true" />
+          <span className="truncate">Sprint 1</span>
+          <span className="ml-auto text-[11px] font-medium tabular-nums text-blue-600/70">
+            {tasks.length}
+          </span>
         </button>
+        <p className="mt-5 px-3 text-[11px] leading-4 text-slate-400">
+          Planlanan görevleri tek bir çalışma alanından yönetin.
+        </p>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-      <header className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-6 py-5 md:px-8">
-          <div className="flex items-center gap-3.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/20" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M8 9h8M8 12h8M8 15h5" /></svg>
-            </span>
-            <div>
-              <h1 className="text-[17px] font-semibold tracking-tight text-slate-900">SprintBoard</h1>
-              <p className="hidden text-xs leading-none text-slate-500 sm:block">Sprintlerinizi planlayın, önceliklendirin ve ilerlemeyi takip edin.</p>
-            </div>
+      <header className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/90 supports-[backdrop-filter]:bg-white/75">
+        <div className="flex items-center justify-between gap-4 px-5 py-4 md:px-8 md:py-5">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((prev) => !prev)}
+            aria-expanded={sidebarOpen}
+            aria-label="Panolar menüsü"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 max-[900px]:inline-flex"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <h1 className="truncate text-[17px] font-semibold tracking-tight text-slate-900">Sprint 1</h1>
+            <p className="truncate text-xs leading-none text-slate-500">{summaryLabel}</p>
           </div>
                    <div className="flex items-center gap-3">
-            <p className="text-xs text-slate-500 sm:hidden">Sprint yönetimi</p>
             <button
               type="button"
               onClick={() => handleOpenChange(true)}
@@ -275,15 +276,43 @@ export default function App() {
         </DialogContent>
       </Dialog>
       <div className="sb-board w-full">
-        <div className="mb-8 flex flex-col gap-1">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-900">Panonuz</h2>
-          <p className="max-w-2xl text-sm leading-6 text-slate-500 sm:hidden">Sprintlerinizi planlayın, önceliklendirin ve ilerlemeyi takip edin.</p>
-          <p className="hidden max-w-2xl text-sm leading-6 text-slate-500 sm:block">Görevlerinizi üç aşamada takip edin — sade, odaklı ve her cihazda tutarlı.</p>
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+            <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <input
+              id="pano-arama"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Görevlerde ara"
+              aria-label="Görevlerde ara"
+              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[13px] text-slate-800 shadow-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+          <div className="flex items-center gap-1 rounded-lg bg-slate-100/80 p-1" role="group" aria-label="Duruma göre filtrele">
+            {(["Tümü", ...COLUMN_STATUSES] as const).map((option) => {
+              const active = filter === option;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  data-filter={option}
+                  data-active={active ? "true" : undefined}
+                  aria-current={active}
+                  onClick={() => setFilter(option)}
+                  className={`rounded-md px-2.5 py-1 text-[12px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 ${active ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <main className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start">
           <BoardColumn
             title="Yapılacak"
             items={tasksIn("Yapılacak")}
+            onAddTask={() => handleOpenChange(true)}
             onDeleteTask={handleDelete}
             onDropTask={handleMoveTask("Yapılacak")}
             statusOptions={COLUMN_STATUSES}
@@ -292,6 +321,7 @@ export default function App() {
           <BoardColumn
             title="Devam Ediyor"
             items={tasksIn("Devam Ediyor")}
+            onAddTask={() => handleOpenChange(true)}
             onDeleteTask={handleDelete}
             onDropTask={handleMoveTask("Devam Ediyor")}
             statusOptions={COLUMN_STATUSES}
@@ -300,6 +330,7 @@ export default function App() {
           <BoardColumn
             title="Tamamlandı"
             items={tasksIn("Tamamlandı")}
+            onAddTask={() => handleOpenChange(true)}
             onDeleteTask={handleDelete}
             onDropTask={handleMoveTask("Tamamlandı")}
             statusOptions={COLUMN_STATUSES}
