@@ -11,7 +11,7 @@ Türkçe arayüzde görev oluşturma, düzenleme, silme ve Yapılacak / Devam Ed
 - React + TypeScript + Vite
 - npm
 - İlk sürümde backend, veritabanı ve kullanıcı girişi yok
-- Kalıcı saklama sonraki görevde localStorage ile eklenecek
+- Görevler bu tarayıcıda localStorage ile saklanır
 - Canlı yayın için GitHub reposuna bağlı Vercel kullanılacak
 
 ## Kurulum
@@ -19,7 +19,7 @@ Türkçe arayüzde görev oluşturma, düzenleme, silme ve Yapılacak / Devam Ed
 Gereksinimler: Node.js 20+ ve npm.
 
 ```bash
-npm install
+npm ci
 ```
 
 ## Çalıştırma
@@ -51,4 +51,5 @@ npm test
 4. localStorage ile kalıcı saklama
 5. Arama, öncelik filtresi ve sayaçlar
 
-Her görev ayrı analiz, uygulama, doğrulama ve insan incelemesi üzerinden ilerleyecek. Bu repository başlangıçta uygulama kodu içermez.
+Her görev ayrı analiz, uygulama, doğrulama ve insan incelemesi üzerinden ilerleyecek. Tasarım geliştirmelerinde [tasarım temelini](docs/design.md) referans alın.
+

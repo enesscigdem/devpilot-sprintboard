@@ -88,21 +88,32 @@ export function DialogContent({ className = "", children, hideClose = false, ...
   const { open, setOpen } = useDialogContext("DialogContent")
 
   const contentRef = React.useRef<HTMLDivElement>(null)
+  const setOpenRef = React.useRef(setOpen)
+  setOpenRef.current = setOpen
   React.useEffect(() => {
     if (!open) return
+    const previousFocus = document.activeElement as HTMLElement | null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") setOpenRef.current(false)
+      if (event.key === "Tab") {
+        const focusable = Array.from(contentRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex="0"]') ?? [])
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
     }
     document.addEventListener("keydown", onKeyDown)
-    const frame = requestAnimationFrame(() => contentRef.current?.focus())
+    const frame = requestAnimationFrame(() => (contentRef.current?.querySelector<HTMLElement>("input") ?? contentRef.current)?.focus())
     return () => {
       document.body.style.overflow = previousOverflow
       document.removeEventListener("keydown", onKeyDown)
       cancelAnimationFrame(frame)
+      previousFocus?.focus()
     }
-  }, [open, setOpen])
+  }, [open])
 
   if (!open) return null
 
@@ -166,3 +177,4 @@ export function DialogTitle({ className = "", ...props }: React.HTMLAttributes<H
 export function DialogDescription({ className = "", ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return <p className={["text-[13px] leading-6 text-zinc-500", className].filter(Boolean).join(" ")} {...props} />
 }
+
