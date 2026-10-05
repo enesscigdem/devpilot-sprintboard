@@ -110,12 +110,14 @@ export default function App() {
               <h2 className="group-label">{group.label}</h2>
               <ul>
                 {group.notes.map((note) => (
-                  <li key={note.id}>
+                  <li key={note.id} style={{ minWidth: 0 }}>
                     <button type="button" className="note-row" aria-current={note.id === selectedId ? "true" : undefined}
                       onClick={() => select(note.id)}>
                       <span className="note-row-title">
                         {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
-                        {note.title.trim() || "Yeni Not"}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
+                          {note.title.trim() || "Yeni Not"}
+                        </span>
                         {note.dueDate && (
                           <span className="due-date-badge" style={{
                             fontSize: "11px",
@@ -124,7 +126,8 @@ export default function App() {
                             borderRadius: "4px",
                             background: isOverdue(note.dueDate) ? "var(--due-badge-bg)" : "var(--hover)",
                             color: isOverdue(note.dueDate) ? "var(--due-overdue)" : "var(--text-2)",
-                            marginLeft: "auto"
+                            marginLeft: "auto",
+                            flexShrink: 0
                           }}>
                             {formatDueDate(note.dueDate)}
                           </span>
