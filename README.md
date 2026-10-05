@@ -1,17 +1,17 @@
 # SprintBoard
 
-DevPilot ile sıfırdan geliştirilecek küçük bir görev takip uygulaması.
+iCloud Notes tarzı, zengin metin destekli küçük bir not uygulaması.
 
 ## Hedef
 
-Türkçe arayüzde görev oluşturma, düzenleme, silme ve Yapılacak / Devam Ediyor / Tamamlandı durumları arasında geçiş.
+Türkçe arayüzde solda not listesi, sağda seçili notun zengin metin editörü. Notlar oluşturulur, aranır, sabitlenir ve silinir.
 
 ## Teknoloji kararı
 
 - React + TypeScript + Vite
 - npm
 - İlk sürümde backend, veritabanı ve kullanıcı girişi yok
-- Görevler bu tarayıcıda localStorage ile saklanır
+- Notlar bu tarayıcıda localStorage ile saklanır (eski görevler otomatik taşınır)
 - Canlı yayın için GitHub reposuna bağlı Vercel kullanılacak
 
 ## Kurulum

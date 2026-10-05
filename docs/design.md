@@ -1,15 +1,12 @@
 # SprintBoard tasarım temeli
 
-Görsel yön: macOS uygulamalarından ilham alan sakin bir çalışma alanı. Sıcak gri yüzeyler, net tipografi, beyaz görev kartları ve sınırlı indigo vurgu.
+Görsel yön: iCloud Notes. Solda not listesi, sağda seçili notun zengin metin editörü; sıcak sarı vurgu, açık/koyu tema (`prefers-color-scheme`).
 
-- Sidebar pano gezinmesi ve pano ilerlemesi içindir. Görev araması ve durum filtresi ana alanın araç çubuğunda kalır.
-- Ana düzen: üst gezinme satırı, pano başlığı, gerçek veriden ilerleme özeti, araç çubuğu, görev sütunları.
-- `src/index.css` ortak renkleri, yüzeyleri, boşlukları ve bileşen stillerini belirler. Yeni bileşenlerde bu değişkenleri ve mevcut sınıfları kullanın; ikinci bir tema oluşturmayın.
-- Vurgu rengi `--accent-color`, ana metin `--text`, ayırıcı `--line`. Durum renkleri sütunun `--status-color` ve `--status-bg` değişkenlerinden gelir.
-- Kartlar 12px, kontroller 8–9px, dialog 20px köşe kullanır. Gölgeler hafif tutulur.
-- Pano ve liste görünümü aynı görevleri ve aynı aksiyonları sunar. Mobilde sütunlar alt alta dizilir, sidebar açılır bir menü olur.
-- Etkileşimler klavye ile kullanılmalı; sürükleme dışında durum seçimi korunmalıdır. Dialog odağı içeride tutar ve kapanınca açan kontrole döndürür.
-- Sayaçlar ve ilerleme gerçek görevlerden hesaplanır. Örnek görevler veya çalışmayan gezinme öğeleri eklemeyin.
-- Kullanıcının mevcut `sprintboard.tasks.v1` kayıtlarını koruyun.
+- Düzen: sol panel (başlık, arama, tarihe göre gruplanmış liste) + sağ panel (biçimlendirme çubuğu, başlık, içerik, durum satırı). Mobilde iki panel ayrı ekran olur, geri düğmesi listeye döner.
+- Renkler ve yüzeyler `src/index.css` başındaki CSS değişkenlerinden gelir; ikinci bir tema eklemeyin.
+- Editör `contentEditable` üzerine kuruludur (`src/components/NoteEditor.tsx`). Desteklenen biçimler: başlık/alt başlık, kalın, italik, altı/üstü çizili, madde/numara/kontrol listesi, alıntı, kod bloğu, bağlantı, ayırıcı çizgi.
+- İçerik her yüklemede ve yapıştırmada `sanitizeHtml` ile izin verilen etiketlere indirilir (`src/lib/notes.ts`). Yeni etiket eklerken izin listesini güncelleyin.
+- Notlar `sprintboard.notes.v2` anahtarında saklanır. Eski `sprintboard.tasks.v1` görevleri ilk açılışta notlara taşınır (durum, kontrol listesi maddesi olarak).
+- Boş kalan not başka nota geçilince silinir ve kaydedilmez.
 
-Doğrulama: `npm run build`, `npm test`; masaüstü ve mobil tarayıcıda boş pano, dolu pano, liste, görev ekleme ve filtrelenmiş görünümü kontrol edin.
+Doğrulama: `npm run build`, `npm test`; masaüstü ve dar ekranda boş durum, dolu liste, arama, biçimlendirme ve silme akışını tarayıcıda kontrol edin.
