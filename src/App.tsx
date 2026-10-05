@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Pin, Search, SquarePen, StickyNote, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
-  createNote, formatListDate, groupNotes, htmlToText, loadNotes, saveNotes, type Note,
+  createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, saveNotes, type Note,
 } from "./lib/notes";
 
 const preview = (note: Note) => {
@@ -116,6 +116,19 @@ export default function App() {
                       <span className="note-row-title">
                         {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
                         {note.title.trim() || "Yeni Not"}
+                        {note.dueDate && (
+                          <span className="due-date-badge" style={{
+                            fontSize: "11px",
+                            fontWeight: 500,
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            background: isOverdue(note.dueDate) ? "var(--due-badge-bg)" : "var(--hover)",
+                            color: isOverdue(note.dueDate) ? "var(--due-overdue)" : "var(--text-2)",
+                            marginLeft: "auto"
+                          }}>
+                            {formatDueDate(note.dueDate)}
+                          </span>
+                        )}
                       </span>
                       <span className="note-row-meta">
                         <time>{formatListDate(note.updatedAt)}</time>
