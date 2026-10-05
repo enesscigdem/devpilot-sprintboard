@@ -101,6 +101,16 @@ describe('Notlar', () => {
     fireEvent.click(li, { clientX: 8 })
     expect(stored()[0].html).toContain('data-checked="true"')
   })
+
+  it('uzun başlık, boşluksuz metin ve çok satırlı içeriği not listesinde doğru görüntüler', () => {
+    const longTitle = 'A'.repeat(120)
+    const unbrokenBody = '<p>' + 'X'.repeat(300) + '</p><p>Satır 2</p>'
+    seed([note({ id: 'long-note', title: longTitle, html: unbrokenBody })])
+    render(<App />)
+    const list = within(screen.getByLabelText('Not listesi'))
+    expect(list.getByText(longTitle)).toBeInTheDocument()
+    expect(list.getByText(new RegExp('X'.repeat(50)))).toBeInTheDocument()
+  })
 })
 
 describe('sanitizeHtml', () => {
