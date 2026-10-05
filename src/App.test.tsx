@@ -101,6 +101,21 @@ describe('Notlar', () => {
     fireEvent.click(li, { clientX: 8 })
     expect(stored()[0].html).toContain('data-checked="true"')
   })
+
+  it('uzun başlık ve içerik listesini doğru işler', () => {
+    const longTitle = 'A'.repeat(200)
+    const longHtml = '<p>' + 'B'.repeat(500) + '</p>'
+    seed([note({ id: 'long', title: longTitle, html: longHtml })])
+    render(<App />)
+    const list = within(screen.getByLabelText('Not listesi'))
+    const item = list.getByText(longTitle)
+    expect(item).toBeInTheDocument()
+    const li = item.closest('li')
+    fireEvent.click(li!)
+    expect(screen.getByLabelText('Not başlığı')).toHaveValue(longTitle)
+    const editor = screen.getByRole('textbox', { name: 'Not içeriği' })
+    expect(editor.innerHTML).toContain('B'.repeat(500))
+  })
 })
 
 describe('sanitizeHtml', () => {

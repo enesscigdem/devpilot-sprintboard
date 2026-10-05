@@ -115,7 +115,17 @@ export default function App() {
                       onClick={() => select(note.id)}>
                       <span className="note-row-title">
                         {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
-                        {note.title.trim() || "Yeni Not"}
+                        <span
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {note.title.trim() || "Yeni Not"}
+                        </span>
                         {note.dueDate && (
                           <span className="due-date-badge" style={{
                             fontSize: "11px",
@@ -124,7 +134,8 @@ export default function App() {
                             borderRadius: "4px",
                             background: isOverdue(note.dueDate) ? "var(--due-badge-bg)" : "var(--hover)",
                             color: isOverdue(note.dueDate) ? "var(--due-overdue)" : "var(--text-2)",
-                            marginLeft: "auto"
+                            marginLeft: "auto",
+                            flex: "none"
                           }}>
                             {formatDueDate(note.dueDate)}
                           </span>
