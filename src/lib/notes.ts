@@ -6,6 +6,8 @@ export type Note = {
   pinned: boolean;
   createdAt: number;
   updatedAt: number;
+  /** ISO 8601 tarih dizesi (YYYY-MM-DD) veya undefined. */
+  dueDate?: string;
 };
 
 export const NOTES_KEY = "sprintboard.notes.v2";
@@ -107,7 +109,8 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   const num = (v: unknown, fb: number) => (typeof v === "number" && Number.isFinite(v) ? v : fb);
   const now = Date.now();
   const createdAt = num(r.createdAt, now);
-  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt) };
+  const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
+  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), dueDate };
 }
 
 /** Eski görev kaydını (başlık, açıklama, durum) zengin bir nota çevirir. */
@@ -126,7 +129,9 @@ function fromLegacyTask(entry: unknown, seen: Set<string>, now: number): Note | 
   const marker = status
     ? `<ul data-checklist><li${isCheckable(status) ? ' data-checked="true"' : ""}>${escapeHtml(status)}</li></ul>`
     : "";
-  return { id, title, html: sanitizeHtml(body + marker), pinned: false, createdAt: now, updatedAt: now };
+  const legacyDate = r.dueDate ?? r.due_date ?? r.date;
+  const dueDate = typeof legacyDate === "string" ? legacyDate : undefined;
+  return { id, title, html: sanitizeHtml(body + marker), pinned: false, createdAt: now, updatedAt: now, dueDate };
 }
 
 /** Notları yükler; bozuk kayıtları atlar, kayıt yoksa eski görevleri taşır. */
@@ -182,3 +187,17 @@ export function formatListDate(ts: number, now = Date.now()): string {
 
 export const formatFullDate = (ts: number) =>
   new Date(ts).toLocaleString("tr-TR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/** Son tarihi "23 Oca" formatında gösterir. */
+export function formatDueDate(isoDate: string): string {
+  const d = new Date(isoDate + "T00:00:00");
+  const day = d.getDate();
+  const month = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"][d.getMonth()];
+  return `${day} ${month}`;
+}
+
+/** Verilen son tarihin geçip geçmediğini kontrol eder. */
+export function isOverdue(isoDate: string, now = Date.now()): boolean {
+  const dueTime = new Date(isoDate + "T23:59:59").getTime();
+  return dueTime < now;
+}
