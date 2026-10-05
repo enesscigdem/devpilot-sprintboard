@@ -73,7 +73,7 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
       aria-grabbed={isDragging ? true : undefined}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`group rounded-xl border border-border/60 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors transition-shadow duration-200 ease-out hover:border-border hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-grab active:cursor-grabbing ${isDragging ? "opacity-95 ring-2 ring-primary/20 shadow-[0_8px_24px_rgba(0,0,0,0.10)] rotate-[0.4deg] scale-[1.01]" : ""}`}
+      className={`group rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-2)] shadow-[var(--shadow-card)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-[var(--border)] hover:shadow-[var(--shadow-card-hover)] hover:bg-[var(--surface-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-1)] cursor-grab active:cursor-grabbing ${isDragging ? "opacity-95 ring-2 ring-primary/20 shadow-[var(--shadow-card-drag)] rotate-[0.4deg] scale-[1.01]" : ""}`}
       aria-label={task.title}
       data-testid={`task-card-${task.id}`}
     >
@@ -99,7 +99,7 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
           <div
             role="group"
             aria-label="Durum değiştir"
-            className="inline-flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5"
+            className="inline-flex items-center gap-0.5 rounded-[var(--radius-full)] border border-[var(--border-subtle)] bg-[var(--surface-1)] p-0.5"
           >
             {(["todo", "inProgress", "done"] as TaskStatus[]).map((status) => (
               <button
@@ -109,10 +109,10 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
                 aria-label={`Durumu ${STATUS_LABELS[status]} yap`}
                 data-testid={`task-status-option-${task.id}-${status}`}
                 onClick={() => handleStatusChange(status)}
-                className={`rounded-md px-2 py-1 text-[11px] font-medium leading-none transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                className={`rounded-[var(--radius-pill)] px-2 py-1 text-[11px] font-medium leading-none transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
                   (task.status ?? "todo") === status
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                    ? "bg-[var(--surface-3)] text-foreground shadow-[var(--shadow-sm)]"
+                    : "text-muted-foreground hover:bg-[var(--surface-2)] hover:text-foreground"
                 }`}
               >
                 {STATUS_SHORT_LABELS[status]}

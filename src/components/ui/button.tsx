@@ -9,15 +9,15 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium touch-manipulation cursor-pointer transition-colors duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[999px] text-sm font-medium touch-manipulation cursor-pointer transition-colors duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-1)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
 
 const variantClasses: Record<ButtonVariant, string> = {
-  default: "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 active:bg-zinc-900",
-  secondary: "bg-white text-zinc-900 border border-zinc-200 shadow-sm hover:bg-zinc-50 active:bg-zinc-100",
-  outline: "border border-zinc-200 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50 active:bg-zinc-100",
-  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200/70",
-  destructive: "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-700 focus-visible:ring-red-600",
-  subtle: "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 active:bg-zinc-300/80",
+  default: "bg-[var(--accent)] text-white shadow-sm hover:opacity-90 active:opacity-100",
+  secondary: "bg-[var(--surface-2)] text-[var(--text-primary)] border border-[var(--border)] shadow-sm hover:bg-[var(--surface-3)] active:bg-[var(--surface-4)]",
+  outline: "border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-secondary)] shadow-sm hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)]",
+  ghost: "text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] active:bg-[var(--surface-3)]",
+  destructive: "bg-[var(--destructive)] text-white shadow-sm hover:opacity-90 active:opacity-100 focus-visible:ring-[var(--destructive)]",
+  subtle: "bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[var(--surface-3)] active:bg-[var(--surface-4)]",
 }
 
 const sizeClasses: Record<ButtonSize, string> = {

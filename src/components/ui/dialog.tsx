@@ -71,7 +71,7 @@ export function DialogOverlay({ className = "" }: { className?: string }) {
       data-slot="dialog-overlay"
       aria-hidden="true"
       className={[
-        "fixed inset-0 z-50 bg-zinc-900/20",
+        "fixed inset-0 z-50 bg-[var(--surface-backdrop)]",
         className,
       ]
         .filter(Boolean)
@@ -127,7 +127,7 @@ export function DialogContent({ className = "", children, hideClose = false, ...
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}
         className={[
-          "relative z-50 w-full max-w-lg rounded-[20px] border border-zinc-200/60 bg-white p-6 text-zinc-800 shadow-[0_16px_40px_rgba(15,23,42,0.12),0_4px_16px_rgba(15,23,42,0.06)] ring-1 ring-black/[0.04] outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10",
+          "relative z-50 w-full max-w-lg rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-6 text-[var(--text-primary)] shadow-[var(--shadow-dialog)] ring-1 ring-[var(--ring-subtle)] outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]",
           className,
         ]
           .filter(Boolean)
@@ -140,7 +140,7 @@ export function DialogContent({ className = "", children, hideClose = false, ...
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Kapat"
-            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-zinc-400 shadow-sm ring-1 ring-zinc-200/70 transition hover:bg-zinc-50 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/15"
+            className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-base)] text-[var(--text-tertiary)] shadow-sm ring-1 ring-[var(--border-subtle)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)]"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" />
@@ -168,7 +168,7 @@ export function DialogFooter({ className = "", ...props }: React.HTMLAttributes<
 export function DialogTitle({ className = "", ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={["text-[15px] font-semibold tracking-[-0.015em] text-zinc-900", className].filter(Boolean).join(" ")}
+      className={["text-[15px] font-semibold tracking-[-0.015em] text-[var(--text-primary)]", className].filter(Boolean).join(" ")}
       {...props}
     />
   )
