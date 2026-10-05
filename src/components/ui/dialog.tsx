@@ -175,6 +175,6 @@ export function DialogTitle({ className = "", ...props }: React.HTMLAttributes<H
 }
 
 export function DialogDescription({ className = "", ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={["text-[13px] leading-6 text-zinc-500", className].filter(Boolean).join(" ")} {...props} />
+  return <p className={["text-[13px] leading-6 text-[var(--text-secondary)]", className].filter(Boolean).join(" ")} {...props} />
 }
 

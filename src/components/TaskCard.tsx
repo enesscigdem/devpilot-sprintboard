@@ -73,12 +73,12 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
       aria-grabbed={isDragging ? true : undefined}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`group rounded-[var(--radius-card)] border border-[var(--border-subtle)] bg-[var(--surface-2)] shadow-[var(--shadow-card)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-[var(--border)] hover:shadow-[var(--shadow-card-hover)] hover:bg-[var(--surface-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-1)] cursor-grab active:cursor-grabbing ${isDragging ? "opacity-95 ring-2 ring-primary/20 shadow-[var(--shadow-card-drag)] rotate-[0.4deg] scale-[1.01]" : ""}`}
+      className={`group rounded-xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-200 hover:border-black/[0.08] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0 cursor-grab active:cursor-grabbing ${isDragging ? "opacity-90 shadow-[0_8px_24px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] scale-[1.02]" : ""}`}
       aria-label={task.title}
       data-testid={`task-card-${task.id}`}
     >
-      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 p-4 pb-2">
-        <CardTitle className="text-sm font-semibold leading-snug">
+      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 p-5 pb-3">
+        <CardTitle className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-gray-900">
           {task.title}
         </CardTitle>
         {onDelete ? (
@@ -87,7 +87,7 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
             variant="ghost"
             size="icon"
             aria-label={`${task.title} görevini sil`}
-            className="h-8 w-8 shrink-0 text-muted-foreground opacity-70 transition hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+            className="h-7 w-7 shrink-0 text-gray-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100"
             onClick={() => onDelete(task.id)}
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -95,11 +95,11 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
         ) : null}
       </CardHeader>
       {(onStatusChange || onMove) ? (
-        <div className="px-4 pb-2">
+        <div className="px-5 pb-3">
           <div
             role="group"
             aria-label="Durum değiştir"
-            className="inline-flex items-center gap-0.5 rounded-[var(--radius-full)] border border-[var(--border-subtle)] bg-[var(--surface-1)] p-0.5"
+            className="inline-flex items-center gap-1 rounded-lg border border-black/[0.06] bg-gray-50/50 p-1"
           >
             {(["todo", "inProgress", "done"] as TaskStatus[]).map((status) => (
               <button
@@ -109,10 +109,10 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
                 aria-label={`Durumu ${STATUS_LABELS[status]} yap`}
                 data-testid={`task-status-option-${task.id}-${status}`}
                 onClick={() => handleStatusChange(status)}
-                className={`rounded-[var(--radius-pill)] px-2 py-1 text-[11px] font-medium leading-none transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+                className={`rounded-md px-2.5 py-1 text-[12px] font-medium leading-none transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 ${
                   (task.status ?? "todo") === status
-                    ? "bg-[var(--surface-3)] text-foreground shadow-[var(--shadow-sm)]"
-                    : "text-muted-foreground hover:bg-[var(--surface-2)] hover:text-foreground"
+                    ? "bg-white text-gray-900 shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                    : "text-gray-600 hover:bg-white/60 hover:text-gray-900"
                 }`}
               >
                 {STATUS_SHORT_LABELS[status]}
@@ -137,15 +137,15 @@ export default function TaskCard({ task, onDelete, onStatusChange, onMove, isDra
         </div>
       ) : null}
       {task.description || (task as { priority?: string }).priority || (task as { dueDate?: string }).dueDate || (task as { due_date?: string }).due_date || (task as { date?: string }).date ? (
-        <CardContent className="p-4 pt-0">
+        <CardContent className="p-5 pt-0">
           {task.description ? (
-            <p className="line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-muted-foreground">
+            <p className="line-clamp-3 whitespace-pre-line text-[13px] leading-[1.5] text-gray-600">
               {task.description}
             </p>
           ) : null}
           {((task as { priority?: string }).priority || (task as { dueDate?: string }).dueDate || (task as { due_date?: string }).due_date || (task as { date?: string }).date) ? (
-            <p className="mt-2 flex items-center gap-2 text-[11px] font-medium leading-none text-muted-foreground/80">
-              {(task as { priority?: string }).priority ? <span className="rounded bg-muted px-1.5 py-0.5 capitalize">{(task as { priority?: string }).priority}</span> : null}
+            <p className="mt-2.5 flex items-center gap-2 text-[11px] font-medium leading-none text-gray-500">
+              {(task as { priority?: string }).priority ? <span className="rounded-md bg-gray-100 px-2 py-0.5 capitalize text-gray-700">{(task as { priority?: string }).priority}</span> : null}
               {(task as { dueDate?: string }).dueDate || (task as { due_date?: string }).due_date || (task as { date?: string }).date ? <span>{(task as { dueDate?: string }).dueDate ?? (task as { due_date?: string }).due_date ?? (task as { date?: string }).date}</span> : null}
             </p>
           ) : null}

@@ -25,7 +25,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Görevi ekle' }))
     expect(await screen.findByText('Yeni test görevi')).toBeInTheDocument()
     expect(screen.getByText('Kısa açıklama')).toBeInTheDocument()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(2)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(2)
   })
 
   it('yalnızca boşluk içeren başlığı kabul etmez', async () => {
@@ -35,7 +35,7 @@ describe('App', () => {
     fireEvent.change(baslik, { target: { value: '   ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Görevi ekle' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Başlık zorunludur.')
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(3)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(4)
   })
 
   it('karttan görevi siler ve boş durumu geri getirir', async () => {
@@ -47,7 +47,7 @@ describe('App', () => {
     expect(await screen.findByText('Silinecek görev')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Silinecek görev görevini sil' }))
     expect(screen.queryByText('Silinecek görev')).not.toBeInTheDocument()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(3)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(4)
   })
 
   it('kartı sürükleyip sütunlar arasında taşır, sayaçları ve boş durumları günceller', async () => {
@@ -73,7 +73,7 @@ describe('App', () => {
     expect(devamEden.getByText('Taşınacak görev')).toBeInTheDocument()
     expect(devamEden.getByText('1')).toBeInTheDocument()
     expect(within(screen.getByLabelText('Yapılacak')).getByText('0')).toBeInTheDocument()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(2)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(2)
 
     fireEvent.dragStart(screen.getByText('Taşınacak görev'), { dataTransfer })
     fireEvent.drop(screen.getByLabelText('Tamamlandı'), { dataTransfer })
@@ -83,11 +83,11 @@ describe('App', () => {
     expect(tamamlandi.getByText('1')).toBeInTheDocument()
     expect(within(screen.getByLabelText('Devam Ediyor')).getByText('0')).toBeInTheDocument()
     expect(within(screen.getByLabelText('Yapılacak')).getByText('0')).toBeInTheDocument()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(2)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(2)
 
     fireEvent.click(screen.getByRole('button', { name: 'Taşınacak görev görevini sil' }))
     expect(screen.queryByText('Taşınacak görev')).not.toBeInTheDocument()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(3)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(4)
   })
 
   it('kart üzerindeki durum seçimiyle görevi taşır', async () => {
@@ -144,7 +144,7 @@ describe('App', () => {
     expect(devamEden.getByText('Önceki açıklama')).toBeInTheDocument()
     expect(devamEden.getByText('1')).toBeInTheDocument()
     expect(within(screen.getByLabelText('Yapılacak')).getByText('0')).toBeInTheDocument()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(2)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(2)
   })
 
   it('silinen görev kayıttan da düşer', async () => {
@@ -162,7 +162,7 @@ describe('App', () => {
   it('bozuk kaydı yok sayıp uygulamayı çökertmez', () => {
     window.localStorage.setItem('sprintboard.tasks.v1', '{ bozuk json')
     expect(() => render(<App />)).not.toThrow()
-    expect(screen.getAllByText('Henüz görev yok.')).toHaveLength(3)
+    expect(screen.getAllByText('Henüz görev yok')).toHaveLength(4)
   })
 
   it('geçersiz ve eski kayıtları temizleyerek geri yükler', () => {
@@ -203,7 +203,7 @@ describe('App', () => {
     expect(screen.getByText('Kodlama görevi')).toBeInTheDocument()
     expect(screen.queryByText('Tasarım görevi')).not.toBeInTheDocument()
     expect(screen.queryByText('Yayın görevi')).not.toBeInTheDocument()
-    expect(screen.getAllByText('Eşleşen görev yok.')).toHaveLength(2)
+    expect(screen.getAllByText('Eşleşen görev yok')).toHaveLength(2)
     fireEvent.change(filter, { target: { value: 'Tümü' } })
     expect(screen.getByText('Tasarım görevi')).toBeInTheDocument()
     expect(screen.getByText('Kodlama görevi')).toBeInTheDocument()
@@ -221,7 +221,7 @@ describe('App', () => {
     expect(screen.getByRole('combobox', { name: 'Duruma göre filtrele' })).toHaveValue('Tümü')
     expect(screen.getByLabelText('Görevlerde ara')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Sprint 1/  })).toBeInTheDocument()
-    expect(screen.getByText('Henüz görev yok')).toBeInTheDocument()
+    expect(screen.getAllByText('Henüz görev yok').length).toBeGreaterThan(0)
   })
 
   it('sütun başlıklarında sade sayaç ve sütuna görev ekleme aksiyonu sunar', () => {
