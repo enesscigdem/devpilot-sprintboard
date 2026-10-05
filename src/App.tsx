@@ -170,27 +170,27 @@ export default function App() {
   };
 
   return (
-    <div className="workspace">
+    <div className="notes-workspace">
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Panolar menüsünü kapat" onClick={() => setSidebarOpen(false)} />}
-      <aside id="workspace-sidebar" className={`workspace-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Panolar">
-        <a className="brand" href="#main"><span className="brand-mark"><Columns3 size={20} strokeWidth={2.2} /></span><span>SprintBoard<span className="brand-caption">Kişisel çalışma alanı</span></span></a>
-        <div className="sidebar-section-label">ÇALIŞMA ALANI</div>
-        <button className="sidebar-board" aria-current="true" onClick={() => {setFilter("Tümü"); setQuery(""); setSidebarOpen(false);}}>
-          <span className="board-symbol"><LayoutGrid size={16} /></span><span>Sprint 1</span><span className="sidebar-count">{tasks.length}</span>
+      <aside id="workspace-sidebar" className={`notes-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Panolar">
+        <a className="notes-brand" href="#main"><span className="notes-brand-mark"><Columns3 size={20} strokeWidth={2.2} /></span><span>SprintBoard<span className="notes-brand-caption">Kişisel çalışma alanı</span></span></a>
+        <div className="notes-sidebar-label">ÇALIŞMA ALANI</div>
+        <button className="notes-sidebar-item" aria-current="true" onClick={() => {setFilter("Tümü"); setQuery(""); setSidebarOpen(false);}}>
+          <span className="notes-item-icon"><LayoutGrid size={16} /></span><span>Sprint 1</span><span className="notes-sidebar-count">{tasks.length}</span>
         </button>
-        <div className="sidebar-note"><span className="note-line" /><p>Büyük fikirler.<br /><strong>Küçük adımlar.</strong></p></div>
-        <div className="sidebar-bottom">
-          <div className="sidebar-progress"><span>Pano ilerlemesi</span><strong>%{progress}</strong></div>
-          <div className="progress-track" role="progressbar" aria-label="Pano ilerlemesi" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><span style={{width: `${progress}%`}} /></div>
-          <div className="local-note"><Laptop size={15} /><span>Bu tarayıcıda saklanır</span><span className="local-dot" /></div>
+        <div className="notes-sidebar-note"><span className="notes-note-line" /><p>Büyük fikirler.<br /><strong>Küçük adımlar.</strong></p></div>
+        <div className="notes-sidebar-bottom">
+          <div className="notes-sidebar-progress"><span>Pano ilerlemesi</span><strong>%{progress}</strong></div>
+          <div className="notes-progress-track" role="progressbar" aria-label="Pano ilerlemesi" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><span style={{width: `${progress}%`}} /></div>
+          <div className="notes-local-note"><Laptop size={15} /><span>Bu tarayıcıda saklanır</span><span className="notes-local-dot" /></div>
         </div>
       </aside>
-      <div className="workspace-main">
-        <header className="workspace-topbar">
-          <div className="breadcrumb"><button className="icon-button sidebar-toggle" aria-label="Panolar menüsü" aria-controls="workspace-sidebar" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={18} /></button><span>Çalışma alanı</span><span className="breadcrumb-separator">/</span><strong>Sprint 1</strong></div>
-          <div className="topbar-detail"><span className="local-dot" /> Kişisel pano</div>
+      <div className="notes-main">
+        <header className="notes-topbar">
+          <div className="notes-breadcrumb"><button className="notes-icon-button notes-sidebar-toggle" aria-label="Panolar menüsü" aria-controls="workspace-sidebar" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)}><PanelLeft size={18} /></button><span>Çalışma alanı</span><span className="notes-breadcrumb-separator">/</span><strong>Sprint 1</strong></div>
+          <div className="notes-topbar-detail"><span className="notes-local-dot" /> Kişisel pano</div>
         </header>
-        <main id="main" className="board-content">
+        <main id="main" className="notes-content">
           <section className="board-heading" aria-labelledby="board-title">
             <div><div className="eyebrow"><span /> KENDİ TEMPOYLA, İLERİYE.</div><h1 id="board-title">Sprint 1<span className="heading-dot">.</span></h1><p className="board-description">Fikirlerini sıraya koy. Bir sonraki adıma odaklan.</p></div>
             <button className="primary-button" onClick={() => openComposer()}><Plus size={17} />Yeni görev</button>

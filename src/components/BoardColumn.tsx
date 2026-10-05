@@ -22,23 +22,23 @@ export default function BoardColumn({ title, items = [], onDeleteTask, onDropTas
   const StatusIcon = kind === "done" ? CircleCheck : kind === "doing" ? CircleDashed : Circle;
   const subtitles = { todo: "Sıradaki güzel fikir", doing: "Şimdi odaklandıkların", done: "Emeğinin karşılığı" };
   return (
-    <section className={`kanban-column ${kind} ${isOver ? "drag-over" : ""}`} aria-label={title} data-drag-over={isOver || undefined}
+    <section className={`notes-column notes-column-${kind} ${isOver ? "notes-drag-over" : ""}`} aria-label={title} data-drag-over={isOver || undefined}
       onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "move"; setIsOver(true); }}
       onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsOver(false); }}
       onDrop={event => { event.preventDefault(); setIsOver(false); const id = event.dataTransfer.getData("text/plain") || event.dataTransfer.getData("application/x-task-id"); if (id) onDropTask?.(id); }}>
-      <header className="column-heading"><span className="column-status-icon"><StatusIcon size={17} /></span><h2>{title}</h2><span className="column-count">{tasks.length}</span>{onAddTask && <button className="icon-button column-add" aria-label={`${title} sütununa görev ekle`} onClick={onAddTask}><Plus size={17} /></button>}</header>
-      <p className="column-subtitle">{subtitles[kind]}</p>
-      <ul className="task-list">
-        {tasks.map(task => <li key={task.id} className={`task-tile ${dragging === task.id ? "is-dragging" : ""}`} draggable
+      <header className="notes-header"><div className="notes-header-content"><span className="notes-status-icon"><StatusIcon size={16} strokeWidth={2} /></span><h2 className="notes-title">{title}</h2><span className="notes-count">{tasks.length}</span></div>{onAddTask && <button className="notes-add-btn" aria-label={`${title} sütununa görev ekle`} onClick={onAddTask}><Plus size={16} strokeWidth={2} /></button>}</header>
+      <p className="notes-subtitle">{subtitles[kind]}</p>
+      <ul className="notes-list">
+        {tasks.map(task => <li key={task.id} className={`notes-card ${dragging === task.id ? "notes-dragging" : ""}`} draggable
           onDragStart={event => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", task.id); event.dataTransfer.setData("application/x-task-id", task.id); setDragging(task.id); }}
           onDragEnd={() => setDragging(null)}>
-          <div className="task-tile-top"><span className="task-category"><span />{kind === "done" ? "TAMAMLANDI" : "GÖREV"}</span><div className="task-actions"><GripVertical size={14} className="drag-grip" aria-hidden="true" />{onDeleteTask && <button className="icon-button delete-task" aria-label={`${task.title} görevini sil`} onClick={() => onDeleteTask(task.id)}><Trash2 size={14} /></button>}</div></div>
-          <h3>{task.title}</h3>{task.description && <p className="task-description">{task.description}</p>}
-          <div className="task-tile-footer">{onStatusChange && statusOptions.length > 0 && <label className="task-status-select"><StatusIcon size={12} /><span className="sr-only">Durum değiştir</span><select aria-label="Durum değiştir" value={task.status ?? title} onChange={event => onStatusChange(task.id, event.target.value)}>{statusOptions.map(status => <option key={status}>{status}</option>)}</select><ChevronDown size={12} /></label>}<ArrowUpRight size={14} className="task-arrow" aria-hidden="true" /></div>
+          <div className="notes-card-header"><span className="notes-tag"><span className="notes-tag-dot" />{kind === "done" ? "Tamamlandı" : "Görev"}</span><div className="notes-card-actions"><GripVertical size={14} className="notes-grip" aria-hidden="true" />{onDeleteTask && <button className="notes-delete-btn" aria-label={`${task.title} görevini sil`} onClick={() => onDeleteTask(task.id)}><Trash2 size={13} strokeWidth={2} /></button>}</div></div>
+          <h3 className="notes-card-title">{task.title}</h3>{task.description && <p className="notes-card-description">{task.description}</p>}
+          <div className="notes-card-footer">{onStatusChange && statusOptions.length > 0 && <label className="notes-status-picker"><StatusIcon size={12} strokeWidth={2} /><span className="sr-only">Durum değiştir</span><select aria-label="Durum değiştir" value={task.status ?? title} onChange={event => onStatusChange(task.id, event.target.value)}>{statusOptions.map(status => <option key={status}>{status}</option>)}</select><ChevronDown size={11} /></label>}<ArrowUpRight size={13} className="notes-card-arrow" aria-hidden="true" /></div>
         </li>)}
       </ul>
-      {tasks.length === 0 && <div className="column-empty"><span className="empty-icon"><StatusIcon size={23} strokeWidth={1.3} /></span><p>{filtered ? "Eşleşen görev yok." : "Henüz görev yok."}</p><span>{filtered ? "Aramayı veya filtreyi değiştirebilirsin." : kind === "todo" ? "Her şey küçük bir adımla başlar." : kind === "doing" ? "Hazır olduğunda bir görevi buraya taşı." : "Tamamladığın işler burada birikir."}</span></div>}
-      {onAddTask && <button className="column-new-task" onClick={onAddTask}><Plus size={14} />Görev ekle</button>}
+      {tasks.length === 0 && <div className="notes-empty"><span className="notes-empty-icon"><StatusIcon size={28} strokeWidth={1.5} /></span><p className="notes-empty-title">{filtered ? "Eşleşen görev yok" : "Henüz görev yok"}</p><span className="notes-empty-subtitle">{filtered ? "Aramayı veya filtreyi değiştirebilirsin." : kind === "todo" ? "Her şey küçük bir adımla başlar." : kind === "doing" ? "Hazır olduğunda bir görevi buraya taşı." : "Tamamladığın işler burada birikir."}</span></div>}
+      {onAddTask && <button className="notes-new-task" onClick={onAddTask}><Plus size={15} strokeWidth={2} />Görev ekle</button>}
     </section>
   );
 }
