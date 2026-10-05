@@ -111,6 +111,14 @@ describe('Notlar', () => {
     expect(list.getByText(longTitle)).toBeInTheDocument()
     expect(list.getByText(new RegExp('X'.repeat(50)))).toBeInTheDocument()
   })
+
+  it('editör sayfası responsive içerik kapsayıcısıyla görüntülenir', () => {
+    seed([note({ id: '1', title: 'Responsive Not', html: '<p>İçerik alanı</p>' })])
+    render(<App />)
+    const editorPage = document.querySelector('.editor-page')
+    expect(editorPage).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Not içeriği' })).toHaveTextContent('İçerik alanı')
+  })
 })
 
 describe('sanitizeHtml', () => {
