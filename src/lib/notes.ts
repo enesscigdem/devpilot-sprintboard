@@ -8,6 +8,7 @@ export type Note = {
   updatedAt: number;
   /** ISO 8601 tarih dizesi (YYYY-MM-DD) veya undefined. */
   dueDate?: string;
+  tags: string[];
 };
 
 export const NOTES_KEY = "sprintboard.notes.v2";
@@ -76,7 +77,7 @@ export const newId = () =>
     : `not-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export const createNote = (now = Date.now()): Note => ({
-  id: newId(), title: "", html: "", pinned: false, createdAt: now, updatedAt: now,
+  id: newId(), title: "", html: "", pinned: false, createdAt: now, updatedAt: now, tags: [],
 });
 
 const readJson = (key: string): unknown => {
@@ -110,7 +111,8 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   const now = Date.now();
   const createdAt = num(r.createdAt, now);
   const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
-  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), dueDate };
+  const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
+  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), dueDate, tags };
 }
 
 /** Eski görev kaydını (başlık, açıklama, durum) zengin bir nota çevirir. */
@@ -131,7 +133,7 @@ function fromLegacyTask(entry: unknown, seen: Set<string>, now: number): Note | 
     : "";
   const legacyDate = r.dueDate ?? r.due_date ?? r.date;
   const dueDate = typeof legacyDate === "string" ? legacyDate : undefined;
-  return { id, title, html: sanitizeHtml(body + marker), pinned: false, createdAt: now, updatedAt: now, dueDate };
+  return { id, title, html: sanitizeHtml(body + marker), pinned: false, createdAt: now, updatedAt: now, dueDate, tags: [] };
 }
 
 /** Notları yükler; bozuk kayıtları atlar, kayıt yoksa eski görevleri taşır. */
