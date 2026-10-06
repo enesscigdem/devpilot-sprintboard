@@ -20,6 +20,8 @@ export default function App() {
     return first?.id ?? null;
   });
   const [mobilePane, setMobilePane] = useState<"list" | "editor">("list");
+  const [deletedNote, setDeletedNote] = useState<Note | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -35,7 +37,10 @@ export default function App() {
       }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    };
   }, []);
 
   const isEmpty = (n: Note) => !n.title.trim() && !htmlToText(n.html);
@@ -78,6 +83,18 @@ export default function App() {
   };
 
   const deleteNote = (id: string) => {
+    const target = notes.find((n) => n.id === id) || (draft && draft.id === id ? draft : null);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+
+    if (target && (target.title.trim() || htmlToText(target.html))) {
+      setDeletedNote(target);
+      undoTimerRef.current = setTimeout(() => {
+        setDeletedNote(null);
+      }, 5000);
+    } else {
+      setDeletedNote(null);
+    }
+
     if (draft && draft.id === id) {
       setDraft(null);
       const next = [...notes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
@@ -90,6 +107,16 @@ export default function App() {
     const next = [...remaining].sort((a, b) => b.updatedAt - a.updatedAt)[0];
     setSelectedId(next?.id ?? null);
     if (!next) setMobilePane("list");
+  };
+
+  const handleUndo = () => {
+    if (!deletedNote) return;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setDraft(null);
+    setNotes((prev) => [deletedNote, ...prev.filter((n) => n.id !== deletedNote.id)]);
+    setSelectedId(deletedNote.id);
+    setMobilePane("editor");
+    setDeletedNote(null);
   };
 
   const needle = query.trim().toLocaleLowerCase("tr");
@@ -200,6 +227,15 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {deletedNote && (
+        <div className="undo-toast" role="status">
+          <span>Not silindi</span>
+          <button type="button" className="undo-button" onClick={handleUndo}>
+            Geri Al
+          </button>
+        </div>
+      )}
     </div>
   );
 }

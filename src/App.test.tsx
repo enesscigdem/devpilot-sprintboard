@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, within, act } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import App from './App'
 import { sanitizeHtml, groupNotes, type Note } from './lib/notes'
@@ -133,6 +133,42 @@ describe('Notlar', () => {
     fireEvent.click(screen.getByRole('button', { name: /Mevcut Not/ }))
     expect(stored()).toHaveLength(1)
     expect(screen.queryByText('Yeni Not')).not.toBeInTheDocument()
+  })
+
+  it('not silindiğinde geri alma bildirimi gösterir ve geri al ile notu kurtarır', () => {
+    seed([note({ id: '1', title: 'Silinecek Not', html: '<p>İçerik</p>', pinned: true })])
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Notu sil' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sil' }))
+
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByText('Not silindi')).toBeInTheDocument()
+    expect(stored()).toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Geri Al' }))
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Not başlığı')).toHaveValue('Silinecek Not')
+    expect(stored()).toHaveLength(1)
+    expect(stored()[0].title).toBe('Silinecek Not')
+    expect(stored()[0].pinned).toBe(true)
+  })
+
+  it('geri alma bildirimi süre sonunda kaybolur', () => {
+    vi.useFakeTimers()
+    seed([note({ id: '1', title: 'Silinecek Not', html: '<p>İçerik</p>' })])
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Notu sil' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sil' }))
+
+    expect(screen.getByText('Not silindi')).toBeInTheDocument()
+    act(() => {
+      vi.advanceTimersByTime(5500)
+    })
+    expect(screen.queryByText('Not silindi')).not.toBeInTheDocument()
+    vi.useRealTimers()
   })
 })
 
