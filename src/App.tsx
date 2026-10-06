@@ -1,9 +1,9 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Moon, Pin, Search, SquarePen, StickyNote, Sun, X } from "lucide-react";
+import { ChevronLeft, Download, FileDown, Moon, Pin, Search, SquarePen, StickyNote, Sun, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
-  createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, saveNotes, type Note,
+  createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, noteToMarkdown, notesToJson, sanitizeFilename, saveNotes, type Note,
 } from "./lib/notes";
 
 const preview = (note: Note) => {
@@ -135,6 +135,31 @@ export default function App() {
     setDeletedNote(null);
   };
 
+  const downloadFile = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportAllJson = () => {
+    const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
+    const json = notesToJson(persisted.length > 0 ? persisted : notes);
+    downloadFile(json, "notlar.json", "application/json;charset=utf-8");
+  };
+
+  const exportSelectedMarkdown = () => {
+    if (!selected) return;
+    const md = noteToMarkdown(selected);
+    const filename = `${sanitizeFilename(selected.title || "not")}.md`;
+    downloadFile(md, filename, "text/markdown;charset=utf-8");
+  };
+
   const needle = query.trim().toLocaleLowerCase("tr");
   const visible = useMemo(
     () => notes.filter((n) => !needle || n.title.toLocaleLowerCase("tr").includes(needle) || htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
@@ -153,6 +178,25 @@ export default function App() {
             <span className="sidebar-count">{realCount} not</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Tüm notları JSON olarak indir"
+              title="Tüm notları JSON olarak indir"
+              onClick={exportAllJson}
+            >
+              <Download size={19} />
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Seçili notu Markdown olarak indir"
+              title={selected ? "Seçili notu Markdown olarak indir" : "Not seçilmedi"}
+              disabled={!selected}
+              onClick={exportSelectedMarkdown}
+            >
+              <FileDown size={19} />
+            </button>
             <button
               type="button"
               className="icon-button"

@@ -203,3 +203,122 @@ export function isOverdue(isoDate: string, now = Date.now()): boolean {
   const dueTime = new Date(isoDate + "T23:59:59").getTime();
   return dueTime < now;
 }
+
+/** Güvenli dosya adı üretir (özel karakterleri ve geçersiz simgeleri temizler). */
+export function sanitizeFilename(input: string, fallback = "not"): string {
+  const cleaned = input
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleaned || fallback;
+}
+
+/** HTML içeriğini Markdown formatına dönüştürür. */
+export function htmlToMarkdown(html: string): string {
+  if (typeof DOMParser === "undefined") return "";
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+
+  const convertNode = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent ?? "";
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+    const el = node as HTMLElement;
+    const tag = el.tagName.toUpperCase();
+    const childText = Array.from(el.childNodes).map(convertNode).join("");
+
+    switch (tag) {
+      case "H1":
+        return `\n# ${childText.trim()}\n\n`;
+      case "H2":
+        return `\n## ${childText.trim()}\n\n`;
+      case "H3":
+        return `\n### ${childText.trim()}\n\n`;
+      case "P":
+      case "DIV":
+        return childText.trim() ? `${childText.trim()}\n\n` : "\n";
+      case "BR":
+        return "\n";
+      case "STRONG":
+      case "B":
+        return childText ? `**${childText}**` : "";
+      case "EM":
+      case "I":
+        return childText ? `*${childText}*` : "";
+      case "S":
+      case "STRIKE":
+        return childText ? `~~${childText}~~` : "";
+      case "CODE":
+        return el.parentElement?.tagName.toUpperCase() === "PRE" ? childText : `\`${childText}\``;
+      case "PRE":
+        return `\n\`\`\`\n${childText.trim()}\n\`\`\`\n\n`;
+      case "BLOCKQUOTE":
+        return `\n> ${childText.trim().replace(/\n/g, "\n> ")}\n\n`;
+      case "UL": {
+        const isChecklist = el.hasAttribute("data-checklist");
+        const items = Array.from(el.children)
+          .filter((c) => c.tagName.toUpperCase() === "LI")
+          .map((li) => {
+            const checked = li.getAttribute("data-checked") === "true";
+            const inner = Array.from(li.childNodes).map(convertNode).join("").trim();
+            return isChecklist ? `- [${checked ? "x" : " "}] ${inner}` : `- ${inner}`;
+          })
+          .join("\n");
+        return items ? `\n${items}\n\n` : "";
+      }
+      case "OL": {
+        const items = Array.from(el.children)
+          .filter((c) => c.tagName.toUpperCase() === "LI")
+          .map((li, idx) => {
+            const inner = Array.from(li.childNodes).map(convertNode).join("").trim();
+            return `${idx + 1}. ${inner}`;
+          })
+          .join("\n");
+        return items ? `\n${items}\n\n` : "";
+      }
+      case "LI":
+        return childText;
+      case "A": {
+        const href = el.getAttribute("href") ?? "";
+        return href ? `[${childText || href}](${href})` : childText;
+      }
+      case "HR":
+        return "\n---\n\n";
+      default:
+        return childText;
+    }
+  };
+
+  const md = convertNode(doc.body);
+  return md.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Seçili notu Markdown dizesine dönüştürür. */
+export function noteToMarkdown(note: Note): string {
+  const parts: string[] = [];
+  if (note.title.trim()) {
+    parts.push(`# ${note.title.trim()}`);
+  }
+  const meta: string[] = [];
+  if (note.dueDate) {
+    meta.push(`**Son Tarih:** ${note.dueDate}`);
+  }
+  if (note.tags && note.tags.length > 0) {
+    meta.push(`**Etiketler:** ${note.tags.map((t) => `#${t}`).join(" ")}`);
+  }
+  if (meta.length > 0) {
+    parts.push(meta.join(" | "));
+  }
+  const body = htmlToMarkdown(note.html);
+  if (body) {
+    parts.push(body);
+  }
+  return parts.join("\n\n");
+}
+
+/** Notları JSON dizesine dönüştürür. */
+export function notesToJson(notes: Note[]): string {
+  return JSON.stringify(notes, null, 2);
+}
