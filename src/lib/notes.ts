@@ -161,6 +161,23 @@ export function saveNotes(notes: Note[]) {
   }
 }
 
+export const getActiveNotes = (notes: Note[]): Note[] => notes.filter((n) => !n.deletedAt);
+
+export const getTrashNotes = (notes: Note[]): Note[] =>
+  notes.filter((n) => typeof n.deletedAt === "number").sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0));
+
+export const moveToTrash = (notes: Note[], id: string, now = Date.now()): Note[] =>
+  notes.map((n) => (n.id === id ? { ...n, deletedAt: now } : n));
+
+export const restoreNote = (notes: Note[], id: string): Note[] =>
+  notes.map((n) => (n.id === id ? { ...n, deletedAt: undefined } : n));
+
+export const permanentlyDeleteNote = (notes: Note[], id: string): Note[] =>
+  notes.filter((n) => n.id !== id);
+
+export const emptyTrash = (notes: Note[]): Note[] =>
+  notes.filter((n) => !n.deletedAt);
+
 export type NoteGroup = { label: string; notes: Note[] };
 
 /** Notları iCloud Notes gibi Sabitlenmiş / Bugün / Önceki 7 gün / Daha eski olarak gruplar. */
