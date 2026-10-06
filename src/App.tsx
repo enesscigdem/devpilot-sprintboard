@@ -1,6 +1,6 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Pin, Search, SquarePen, StickyNote, X } from "lucide-react";
+import { ChevronLeft, Moon, Pin, Search, SquarePen, StickyNote, Sun, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
   createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, saveNotes, type Note,
@@ -12,6 +12,13 @@ const preview = (note: Note) => {
 };
 
 export default function App() {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
   const [notes, setNotes] = useState<Note[]>(loadNotes);
   const [draft, setDraft] = useState<Note | null>(null);
   const [query, setQuery] = useState("");
@@ -23,6 +30,15 @@ export default function App() {
   const [deletedNote, setDeletedNote] = useState<Note | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   useEffect(() => {
     const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
@@ -136,9 +152,20 @@ export default function App() {
             <h1>Notlar</h1>
             <span className="sidebar-count">{realCount} not</span>
           </div>
-          <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
-            <SquarePen size={19} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
+              title={theme === "dark" ? "Açık tema" : "Koyu tema"}
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
+            <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
+              <SquarePen size={19} />
+            </button>
+          </div>
         </header>
         <div className="search">
           <Search size={15} />
