@@ -295,6 +295,49 @@ button { cursor: pointer; }
   font-size: 12px; color: var(--text-3);
 }
 
+/* ---------- Bildirim (Toast) ---------- */
+.toast,
+.undo-toast,
+.undo-notification {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+}
+
+.toast button,
+.undo-toast button,
+.undo-notification button,
+.undo-button {
+  border: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toast button:hover,
+.undo-toast button:hover,
+.undo-notification button:hover,
+.undo-button:hover {
+  text-decoration: underline;
+}
+
 /* ---------- Mobil ve Geniş Ekran Uyumu ---------- */
 @media (max-width: 760px) {
   .app { display: block; }
