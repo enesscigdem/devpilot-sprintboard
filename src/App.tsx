@@ -22,6 +22,7 @@ export default function App() {
   const [notes, setNotes] = useState<Note[]>(loadNotes);
   const [draft, setDraft] = useState<Note | null>(null);
   const [query, setQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const first = [...loadNotes()].sort((a, b) => b.updatedAt - a.updatedAt)[0];
     return first?.id ?? null;
@@ -140,10 +141,25 @@ export default function App() {
     setDeletedNote(null);
   };
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    notes.forEach((n) => (n.tags ?? []).forEach((t) => set.add(t)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [notes]);
+
   const needle = query.trim().toLocaleLowerCase("tr");
   const visible = useMemo(
-    () => notes.filter((n) => !needle || n.title.toLocaleLowerCase("tr").includes(needle) || htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
-    [notes, needle],
+    () =>
+      notes.filter((n) => {
+        if (selectedTag && !(n.tags ?? []).includes(selectedTag)) return false;
+        if (!needle) return true;
+        return (
+          n.title.toLocaleLowerCase("tr").includes(needle) ||
+          htmlToText(n.html).toLocaleLowerCase("tr").includes(needle) ||
+          (n.tags ?? []).some((t) => t.toLocaleLowerCase("tr").includes(needle))
+        );
+      }),
+    [notes, needle, selectedTag],
   );
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -216,6 +232,21 @@ export default function App() {
             </button>
           )}
         </div>
+        {allTags.length > 0 && (
+          <div className="tag-filters" aria-label="Etiket filtreleri">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className={`tag-filter-chip ${selectedTag === tag ? "active" : ""}`}
+                aria-pressed={selectedTag === tag}
+                onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )}
         <nav className="note-list" aria-label="Not listesi">
           {groups.map((group) => (
             <section key={group.label} aria-label={group.label}>
@@ -249,6 +280,15 @@ export default function App() {
                         <time>{formatListDate(note.updatedAt)}</time>
                         <span className="note-row-preview">{preview(note)}</span>
                       </span>
+                      {note.tags && note.tags.length > 0 && (
+                        <span className="note-row-tags">
+                          {note.tags.map((tag) => (
+                            <span key={tag} className="note-tag">
+                              #{tag}
+                            </span>
+                          ))}
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -256,7 +296,7 @@ export default function App() {
             </section>
           ))}
           {groups.length === 0 && (
-            <p className="list-empty">{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+            <p className="list-empty">{needle || selectedTag ? "Eşleşen not yok" : "Henüz not yok"}</p>
           )}
         </nav>
       </aside>
