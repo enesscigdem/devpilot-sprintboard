@@ -6,10 +6,62 @@ import {
   createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, type Note,
 } from "./lib/notes";
 
-const preview = (note: Note) => {
-  const text = htmlToText(note.html);
-  return text || "Ek metin yok";
-};
+function normalizeText(text: string): string {
+  return text.toLocaleLowerCase("tr");
+}
+
+function renderHighlightedText(text: string, query: string) {
+  const trimmed = query.trim();
+  if (!trimmed || !text) return text;
+
+  const normQuery = normalizeText(trimmed);
+  const normText = normalizeText(text);
+  const parts: (string | JSX.Element)[] = [];
+  let lastIndex = 0;
+  let index = normText.indexOf(normQuery, lastIndex);
+
+  if (index === -1) return text;
+
+  while (index !== -1) {
+    if (index > lastIndex) {
+      parts.push(text.slice(lastIndex, index));
+    }
+    const matchEnd = index + normQuery.length;
+    parts.push(
+      <mark key={index} className="search-highlight">
+        {text.slice(index, matchEnd)}
+      </mark>
+    );
+    lastIndex = matchEnd;
+    index = normText.indexOf(normQuery, lastIndex);
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+function preview(note: Note, query: string = ""): string {
+  const fullText = htmlToText(note.html) || "Ek metin yok";
+  const trimmed = query.trim();
+  if (!trimmed || fullText === "Ek metin yok") {
+    return fullText;
+  }
+  const normText = normalizeText(fullText);
+  const normQuery = normalizeText(trimmed);
+  const matchIndex = normText.indexOf(normQuery);
+  if (matchIndex === -1) return fullText;
+
+  const snippetLength = 120;
+  const start = Math.max(0, matchIndex - 30);
+  const end = Math.min(fullText.length, start + snippetLength);
+  let snippet = fullText.slice(start, end);
+  if (start > 0) snippet = "..." + snippet;
+  if (end < fullText.length) snippet = snippet + "...";
+  return snippet;
+}
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -486,7 +538,7 @@ export default function App() {
                           <span className="note-row-title">
                             {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
                             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-                              {note.title.trim() || "Yeni Not"}
+                              {renderHighlightedText(note.title.trim() || "Yeni Not", query)}
                             </span>
                             {note.dueDate && (
                               <span className="due-date-badge" style={{
@@ -505,7 +557,7 @@ export default function App() {
                           </span>
                           <span className="note-row-meta">
                             <time>{formatListDate(note.updatedAt)}</time>
-                            <span className="note-row-preview">{preview(note)}</span>
+                            <span className="note-row-preview">{renderHighlightedText(preview(note, query), query)}</span>
                           </span>
                           {note.tags && note.tags.length > 0 && (
                             <span className="note-tags">
