@@ -23,6 +23,7 @@ export default function App() {
   const [draft, setDraft] = useState<Note | null>(null);
   const [currentView, setCurrentView] = useState<"notes" | "trash">("notes");
   const [query, setQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const first = [...loadNotes()].filter((n) => !n.deletedAt).sort((a, b) => b.updatedAt - a.updatedAt)[0];
     return first?.id ?? null;
@@ -79,7 +80,7 @@ export default function App() {
     };
   }, []);
 
-  const isEmpty = (n: Note) => !n.title.trim() && !htmlToText(n.html);
+  const isEmpty = (n: Note) => !n.title.trim() && !htmlToText(n.html) && (!n.tags || n.tags.length === 0);
 
   /** Başka nota geçerken boş kalan notu temizler. */
   const select = (id: string | null) => {
@@ -212,16 +213,25 @@ export default function App() {
 
   const needle = query.trim().toLocaleLowerCase("tr");
   const trashNotes = useMemo(() => getTrashNotes(notes), [notes]);
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    notes.filter((n) => !n.deletedAt).forEach((n) => {
+      n.tags?.forEach((t) => set.add(t));
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [notes]);
+
   const visible = useMemo(
     () =>
       notes.filter(
         (n) =>
           !n.deletedAt &&
+          (!selectedTag || n.tags?.includes(selectedTag)) &&
           (!needle ||
             n.title.toLocaleLowerCase("tr").includes(needle) ||
             htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
       ),
-    [notes, needle],
+    [notes, needle, selectedTag],
   );
   const trashVisible = useMemo(
     () =>
@@ -327,6 +337,21 @@ export default function App() {
             </button>
           )}
         </div>
+        {currentView === "notes" && allTags.length > 0 && (
+          <div className="tag-filters" aria-label="Etiket filtreleri">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className={`tag-filter-chip ${selectedTag === tag ? "active" : ""}`}
+                aria-pressed={selectedTag === tag}
+                onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           className={`trash-nav ${currentView === "trash" ? "active" : ""}`}
@@ -375,6 +400,13 @@ export default function App() {
                         {note.deletedAt && <time className="trash-date">{formatListDate(note.deletedAt)}</time>}
                         <span className="note-row-preview">{preview(note)}</span>
                       </span>
+                      {note.tags && note.tags.length > 0 && (
+                        <span className="note-tags">
+                          {note.tags.map((tag) => (
+                            <span key={tag} className="note-tag">#{tag}</span>
+                          ))}
+                        </span>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -417,6 +449,13 @@ export default function App() {
                             <time>{formatListDate(note.updatedAt)}</time>
                             <span className="note-row-preview">{preview(note)}</span>
                           </span>
+                          {note.tags && note.tags.length > 0 && (
+                            <span className="note-tags">
+                              {note.tags.map((tag) => (
+                                <span key={tag} className="note-tag">#{tag}</span>
+                              ))}
+                            </span>
+                          )}
                         </button>
                       </li>
                     ))}
