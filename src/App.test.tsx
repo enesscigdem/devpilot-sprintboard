@@ -119,6 +119,21 @@ describe('Notlar', () => {
     expect(editorPage).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Not içeriği' })).toHaveTextContent('İçerik alanı')
   })
+
+  it('boş bırakılan yeni notun listeye ve depolamaya kaydedilmesini engeller', () => {
+    seed([note({ id: '1', title: 'Mevcut Not', html: '<p>Detay</p>' })])
+    render(<App />)
+    expect(screen.getByRole('button', { name: /Mevcut Not/ })).toBeInTheDocument()
+    expect(stored()).toHaveLength(1)
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Yeni not' })[0])
+    expect(screen.getByLabelText('Not başlığı')).toBeInTheDocument()
+    expect(stored()).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: /Mevcut Not/ }))
+    expect(stored()).toHaveLength(1)
+    expect(screen.queryByText('Yeni Not')).not.toBeInTheDocument()
+  })
 })
 
 describe('sanitizeHtml', () => {
