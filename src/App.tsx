@@ -28,6 +28,7 @@ export default function App() {
   });
   const [mobilePane, setMobilePane] = useState<"list" | "editor">("list");
   const [deletedNote, setDeletedNote] = useState<Note | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -47,6 +48,19 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditable = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+
+      if (event.key === "Escape") {
+        setShowShortcuts(false);
+      }
+
+      if (event.key === "?" && !isEditable) {
+        event.preventDefault();
+        setShowShortcuts((prev) => !prev);
+        return;
+      }
+
       const mod = event.metaKey || event.ctrlKey;
       if (mod && event.key.toLowerCase() === "n") {
         event.preventDefault();
@@ -300,6 +314,48 @@ export default function App() {
           <button type="button" className="undo-button" onClick={handleUndo}>
             Geri Al
           </button>
+        </div>
+      )}
+
+      {showShortcuts && (
+        <div className="shortcuts-backdrop" onClick={() => setShowShortcuts(false)}>
+          <div
+            className="shortcuts-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shortcuts-heading"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="shortcuts-header">
+              <h2 id="shortcuts-heading" className="shortcuts-title">Klavye Kısayolları</h2>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Kapat"
+                onClick={() => setShowShortcuts(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="shortcuts-body">
+              <div className="shortcut-row">
+                <span className="shortcut-label">Yeni not oluştur</span>
+                <div className="shortcut-keys"><kbd>⌘ / Ctrl</kbd><kbd>N</kbd></div>
+              </div>
+              <div className="shortcut-row">
+                <span className="shortcut-label">Notlarda ara</span>
+                <div className="shortcut-keys"><kbd>⌘ / Ctrl</kbd><kbd>K</kbd></div>
+              </div>
+              <div className="shortcut-row">
+                <span className="shortcut-label">Kısayol yardımı</span>
+                <div className="shortcut-keys"><kbd>?</kbd></div>
+              </div>
+              <div className="shortcut-row">
+                <span className="shortcut-label">Pencereyi kapat / Aramadan çık</span>
+                <div className="shortcut-keys"><kbd>Esc</kbd></div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
