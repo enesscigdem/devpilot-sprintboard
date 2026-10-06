@@ -242,6 +242,10 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
           <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
             {formatFullDate(note.updatedAt)}
           </time>
+          <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder="Başlık"
+            defaultValue={note.title}
+            onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
           <div className="editor-tags" aria-label="Etiketler">
             {(note.tags ?? []).map((tag) => (
               <span key={tag} className="tag-chip">
@@ -276,10 +280,6 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
               }}
             />
           </div>
-          <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder="Başlık"
-            defaultValue={note.title}
-            onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
           <div ref={bodyRef} className="editor-body" contentEditable suppressContentEditableWarning role="textbox"
             aria-multiline="true" aria-label="Not içeriği" data-placeholder="Yazmaya başla…"
             onInput={commit} onClick={onBodyClick} onKeyDown={onBodyKeyDown} onPaste={onPaste} />
