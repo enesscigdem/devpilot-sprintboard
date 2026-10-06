@@ -155,6 +155,27 @@ function preview(note: Note, query: string = ""): string {
 }
 
 export default function App() {
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        moreMenuRef.current &&
+        !moreMenuRef.current.contains(event.target as Node) &&
+        moreButtonRef.current &&
+        !moreButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsMoreMenuOpen(false);
+      }
+    }
+    if (isMoreMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isMoreMenuOpen]);
+
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     const saved = localStorage.getItem("theme");
     if (saved === "light" || saved === "dark") return saved;
