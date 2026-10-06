@@ -31,9 +31,14 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+      const mod = event.metaKey || event.ctrlKey;
+      if (mod && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        addNote();
+      } else if (mod && (event.key.toLowerCase() === "k" || event.key.toLowerCase() === "f")) {
         event.preventDefault();
         searchRef.current?.focus();
+        searchRef.current?.select();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -124,6 +129,39 @@ export default function App() {
     () => notes.filter((n) => !needle || n.title.toLocaleLowerCase("tr").includes(needle) || htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
     [notes, needle],
   );
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (visible.length === 0) return;
+      const idx = visible.findIndex((n) => n.id === selectedId);
+      let nextIdx: number;
+      if (e.key === "ArrowDown") {
+        nextIdx = idx === -1 ? 0 : Math.min(idx + 1, visible.length - 1);
+      } else {
+        nextIdx = idx === -1 ? visible.length - 1 : Math.max(idx - 1, 0);
+      }
+      setSelectedId(visible[nextIdx].id);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (visible.length > 0) {
+        const targetId = visible.find((n) => n.id === selectedId)?.id ?? visible[0].id;
+        select(targetId);
+        searchRef.current?.blur();
+        const titleEl = document.querySelector<HTMLTextAreaElement>(".editor-title");
+        titleEl?.focus();
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setQuery("");
+      searchRef.current?.blur();
+      if (selectedId) {
+        setMobilePane("editor");
+        const titleEl = document.querySelector<HTMLTextAreaElement>(".editor-title");
+        titleEl?.focus();
+      }
+    }
+  };
   const groups = useMemo(() => groupNotes(visible), [visible]);
   const selected = (draft && draft.id === selectedId) ? draft : (notes.find((n) => n.id === selectedId) ?? null);
   const realCount = notes.filter((n) => !isEmpty(n)).length;
@@ -143,7 +181,8 @@ export default function App() {
         <div className="search">
           <Search size={15} />
           <input ref={searchRef} type="search" aria-label="Notlarda ara" placeholder="Ara" value={query}
-            onChange={(e) => setQuery(e.target.value)} />
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown} />
           {query && (
             <button type="button" className="search-clear" aria-label="Aramayı temizle" onClick={() => setQuery("")}>
               <X size={13} />
