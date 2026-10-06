@@ -1,15 +1,71 @@
 import "./index.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, Download, FileDown, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
   createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, type Note,
 } from "./lib/notes";
 
-const preview = (note: Note) => {
+function normalize(str: string): string {
+  return str
+    .replace(/İ/g, "i")
+    .replace(/I/g, "i")
+    .replace(/ı/g, "i")
+    .replace(/ç/g, "c")
+    .replace(/Ç/g, "c")
+    .replace(/ğ/g, "g")
+    .replace(/Ğ/g, "g")
+    .replace(/ö/g, "o")
+    .replace(/Ö/g, "o")
+    .replace(/ş/g, "s")
+    .replace(/Ş/g, "s")
+    .replace(/ü/g, "u")
+    .replace(/Ü/g, "u")
+    .toLowerCase();
+}
+
+function getPreview(note: Note, query: string): string {
   const text = htmlToText(note.html);
-  return text || "Ek metin yok";
-};
+  if (!text) return "Ek metin yok";
+  const normQuery = normalize(query.trim());
+  if (!normQuery) return text;
+  const normText = normalize(text);
+  const matchIdx = normText.indexOf(normQuery);
+  if (matchIdx > 30) {
+    const start = Math.max(0, matchIdx - 15);
+    return `...${text.slice(start)}`;
+  }
+  return text;
+}
+
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const normQuery = normalize(query.trim());
+  if (!normQuery || !text) return <>{text}</>;
+
+  const normText = normalize(text);
+  const parts: ReactNode[] = [];
+  let lastIdx = 0;
+
+  while (lastIdx < text.length) {
+    const matchIdx = normText.indexOf(normQuery, lastIdx);
+    if (matchIdx === -1) {
+      parts.push(text.slice(lastIdx));
+      break;
+    }
+    if (matchIdx > lastIdx) {
+      parts.push(text.slice(lastIdx, matchIdx));
+    }
+    const matchEnd = matchIdx + normQuery.length;
+    parts.push(
+      <mark key={matchIdx} className="highlight">
+        {text.slice(matchIdx, matchEnd)}
+      </mark>,
+    );
+    lastIdx = matchEnd;
+  }
+
+  return <>{parts}</>;
+}
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -210,28 +266,28 @@ export default function App() {
     downloadFile(md, filename, "text/markdown;charset=utf-8");
   };
 
-  const needle = query.trim().toLocaleLowerCase("tr");
+  const normQuery = normalize(query.trim());
   const trashNotes = useMemo(() => getTrashNotes(notes), [notes]);
   const visible = useMemo(
     () =>
       notes.filter(
         (n) =>
           !n.deletedAt &&
-          (!needle ||
-            n.title.toLocaleLowerCase("tr").includes(needle) ||
-            htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
+          (!normQuery ||
+            normalize(n.title).includes(normQuery) ||
+            normalize(htmlToText(n.html)).includes(normQuery)),
       ),
-    [notes, needle],
+    [notes, normQuery],
   );
   const trashVisible = useMemo(
     () =>
       trashNotes.filter(
         (n) =>
-          !needle ||
-          n.title.toLocaleLowerCase("tr").includes(needle) ||
-          htmlToText(n.html).toLocaleLowerCase("tr").includes(needle),
+          !normQuery ||
+          normalize(n.title).includes(normQuery) ||
+          normalize(htmlToText(n.html)).includes(normQuery),
       ),
-    [trashNotes, needle],
+    [trashNotes, normQuery],
   );
 
   const activeListItems = currentView === "trash" ? trashVisible : visible;
@@ -368,19 +424,30 @@ export default function App() {
                     >
                       <span className="note-row-title">
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-                          {note.title.trim() || "Yeni Not"}
+                          <HighlightedText text={note.title.trim() || "Yeni Not"} query={query} />
                         </span>
                       </span>
                       <span className="note-row-meta">
                         {note.deletedAt && <time className="trash-date">{formatListDate(note.deletedAt)}</time>}
-                        <span className="note-row-preview">{preview(note)}</span>
+                        <span className="note-row-preview">
+                          <HighlightedText text={getPreview(note, query)} query={query} />
+                        </span>
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
               {trashVisible.length === 0 && (
-                <p className="list-empty">{needle ? "Eşleşen silinen not yok" : "Çöp kutusu boş"}</p>
+                normQuery ? (
+                  <div className="list-empty">
+                    <p style={{ margin: 0 }}>Sonuç bulunamadı</p>
+                    <button type="button" className="clear-search" onClick={() => setQuery("")}>
+                      Aramayı temizle
+                    </button>
+                  </div>
+                ) : (
+                  <p className="list-empty">Çöp kutusu boş</p>
+                )
               )}
             </>
           ) : (
@@ -396,7 +463,7 @@ export default function App() {
                           <span className="note-row-title">
                             {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
                             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-                              {note.title.trim() || "Yeni Not"}
+                              <HighlightedText text={note.title.trim() || "Yeni Not"} query={query} />
                             </span>
                             {note.dueDate && (
                               <span className="due-date-badge" style={{
@@ -415,7 +482,9 @@ export default function App() {
                           </span>
                           <span className="note-row-meta">
                             <time>{formatListDate(note.updatedAt)}</time>
-                            <span className="note-row-preview">{preview(note)}</span>
+                            <span className="note-row-preview">
+                              <HighlightedText text={getPreview(note, query)} query={query} />
+                            </span>
                           </span>
                         </button>
                       </li>
@@ -424,7 +493,16 @@ export default function App() {
                 </section>
               ))}
               {groups.length === 0 && (
-                <p className="list-empty">{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+                normQuery ? (
+                  <div className="list-empty">
+                    <p style={{ margin: 0 }}>Sonuç bulunamadı</p>
+                    <button type="button" className="clear-search" onClick={() => setQuery("")}>
+                      Aramayı temizle
+                    </button>
+                  </div>
+                ) : (
+                  <p className="list-empty">Henüz not yok</p>
+                )
               )}
             </>
           )}
