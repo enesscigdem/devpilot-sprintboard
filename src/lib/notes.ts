@@ -139,15 +139,22 @@ function fromLegacyTask(entry: unknown, seen: Set<string>, now: number): Note | 
   return { id, title, html: sanitizeHtml(body + marker), pinned: false, createdAt: now, updatedAt: now, dueDate, tags: [] };
 }
 
-/** Notları yükler; bozuk kayıtları atlar, kayıt yoksa eski görevleri taşır. */
+/** Notları yükler; bozuk kayıtları atlar, 30 günden eski çöp kutusu notlarını temizler, kayıt yoksa eski görevleri taşır. */
 export function loadNotes(): Note[] {
   if (typeof window === "undefined") return [];
   const seen = new Set<string>();
   const stored = readJson(NOTES_KEY);
-  if (stored !== null) {
-    return asList(stored).map((e) => fromStored(e, seen)).filter((n): n is Note => n !== null);
-  }
   const now = Date.now();
+  const maxTrashAge = 30 * 86_400_000;
+
+  if (stored !== null) {
+    const rawNotes = asList(stored).map((e) => fromStored(e, seen)).filter((n): n is Note => n !== null);
+    const validNotes = rawNotes.filter((n) => !n.deletedAt || now - n.deletedAt <= maxTrashAge);
+    if (validNotes.length !== rawNotes.length) {
+      saveNotes(validNotes);
+    }
+    return validNotes;
+  }
   return asList(readJson(LEGACY_TASKS_KEY))
     .map((e, i) => fromLegacyTask(e, seen, now - i))
     .filter((n): n is Note => n !== null);
