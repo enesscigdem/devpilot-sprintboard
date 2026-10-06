@@ -13,8 +13,4 @@ export default defineConfig({
       '@': path.resolve(rootDir, './src'),
     },
   },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-  },
 })
