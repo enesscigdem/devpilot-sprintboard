@@ -322,3 +322,73 @@ export function noteToMarkdown(note: Note): string {
 export function notesToJson(notes: Note[]): string {
   return JSON.stringify(notes, null, 2);
 }
+
+export type ImportResult = {
+  added: number;
+  skipped: number;
+  notes: Note[];
+};
+
+/** JSON dizesinden notları içe aktarır ve mevcut notlarla kimlik bazlı birleştirir. */
+export function importNotesFromJson(jsonString: string, existingNotes: Note[]): ImportResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch {
+    throw new Error("Geçersiz JSON dosyası: Dosya içeriği okunamadı.");
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error("Uyumsuz dosya formatı: Not listesi bulunamadı.");
+  }
+
+  const existingIds = new Set(existingNotes.map((n) => n.id));
+  const newNotes: Note[] = [];
+  let skipped = 0;
+  const seenInImport = new Set<string>();
+
+  for (let i = 0; i < parsed.length; i++) {
+    const item = parsed[i];
+    if (!item || typeof item !== "object") {
+      throw new Error(`Uyumsuz dosya formatı: ${i + 1}. kayıt geçerli bir not nesnesi değil.`);
+    }
+    const r = item as Record<string, unknown>;
+    if (typeof r.id !== "string" || !r.id.trim()) {
+      throw new Error(`Uyumsuz dosya formatı: ${i + 1}. kayıtta geçerli bir 'id' alanı bulunamadı.`);
+    }
+    if (typeof r.title !== "string" || typeof r.html !== "string") {
+      throw new Error(`Uyumsuz dosya formatı: ${i + 1}. kayıtta başlık veya içerik alanı eksik ya da hatalı.`);
+    }
+
+    const id = r.id.trim();
+    if (existingIds.has(id) || seenInImport.has(id)) {
+      skipped++;
+      continue;
+    }
+    seenInImport.add(id);
+
+    const now = Date.now();
+    const createdAt = typeof r.createdAt === "number" && Number.isFinite(r.createdAt) ? r.createdAt : now;
+    const updatedAt = typeof r.updatedAt === "number" && Number.isFinite(r.updatedAt) ? r.updatedAt : createdAt;
+    const pinned = Boolean(r.pinned);
+    const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
+    const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
+
+    newNotes.push({
+      id,
+      title: r.title,
+      html: sanitizeHtml(r.html),
+      pinned,
+      createdAt,
+      updatedAt,
+      dueDate,
+      tags,
+    });
+  }
+
+  return {
+    added: newNotes.length,
+    skipped,
+    notes: [...existingNotes, ...newNotes],
+  };
+}

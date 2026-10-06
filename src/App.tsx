@@ -1,9 +1,9 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Download, FileDown, Moon, Pin, Search, SquarePen, StickyNote, Sun, X } from "lucide-react";
+import { ChevronLeft, Download, FileDown, Moon, Pin, Search, SquarePen, StickyNote, Sun, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
-  createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, noteToMarkdown, notesToJson, sanitizeFilename, saveNotes, type Note,
+  createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, sanitizeFilename, saveNotes, type Note,
 } from "./lib/notes";
 
 const preview = (note: Note) => {
@@ -28,8 +28,10 @@ export default function App() {
   });
   const [mobilePane, setMobilePane] = useState<"list" | "editor">("list");
   const [deletedNote, setDeletedNote] = useState<Note | null>(null);
+  const [importStatus, setImportStatus] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -152,6 +154,47 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result;
+        if (typeof text !== "string") {
+          throw new Error("Dosya okunamadı.");
+        }
+        const result = importNotesFromJson(text, notes);
+        setNotes(result.notes);
+        if (result.added > 0 && !selectedId) {
+          const first = [...result.notes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+          if (first) setSelectedId(first.id);
+        }
+        setImportStatus({
+          type: "success",
+          message: `${result.added} not eklendi, ${result.skipped} not atlandı.`,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Notlar içe aktarılırken bir hata oluştu.";
+        setImportStatus({ type: "error", message: msg });
+      }
+    };
+    reader.onerror = () => {
+      setImportStatus({ type: "error", message: "Dosya okunurken bir hata oluştu." });
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  useEffect(() => {
+    if (!importStatus) return;
+    const timer = setTimeout(() => {
+      setImportStatus(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [importStatus]);
+
   const exportAllJson = () => {
     const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
     const json = notesToJson(persisted.length > 0 ? persisted : notes);
@@ -216,6 +259,23 @@ export default function App() {
             <span className="sidebar-count">{realCount} not</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              style={{ display: "none" }}
+              aria-label="JSON dosyası seç"
+              onChange={handleFileImport}
+            />
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="JSON dosyasından notları içe aktar"
+              title="JSON dosyasından notları içe aktar"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload size={19} />
+            </button>
             <button
               type="button"
               className="icon-button"
@@ -343,6 +403,15 @@ export default function App() {
           <span>Not silindi</span>
           <button type="button" className="undo-button" onClick={handleUndo}>
             Geri Al
+          </button>
+        </div>
+      )}
+
+      {importStatus && (
+        <div className="undo-toast" role={importStatus.type === "error" ? "alert" : "status"}>
+          <span>{importStatus.message}</span>
+          <button type="button" className="undo-button" onClick={() => setImportStatus(null)}>
+            Kapat
           </button>
         </div>
       )}
