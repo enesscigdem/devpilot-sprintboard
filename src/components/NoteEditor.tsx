@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
-  Pin, PinOff, Trash2, Undo2, Redo2,
+  Pin, PinOff, Trash2, Undo2, Redo2, X,
 } from "lucide-react";
 import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes";
 
 type Props = {
   note: Note;
-  onChange: (patch: { title?: string; html?: string }) => void;
+  onChange: (patch: { title?: string; html?: string; tags?: string[] }) => void;
   onTogglePin: () => void;
   onDelete: () => void;
 };
@@ -30,12 +30,14 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
   const [block, setBlock] = useState("P");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [words, setWords] = useState(() => wordCount(note.html));
+  const [tagInput, setTagInput] = useState("");
 
   // Not değişince editör içeriğini yükle; yazarken içerik kullanıcıdadır.
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.innerHTML = note.html;
     setWords(wordCount(note.html));
     setConfirmDelete(false);
+    setTagInput("");
     if (!note.title && !note.html) titleRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.id]);
@@ -166,6 +168,21 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
     }
   };
 
+  const handleAddTag = (rawTag: string) => {
+    const trimmed = rawTag.trim().replace(/^#+/, "").trim();
+    if (!trimmed) return;
+    const currentTags = note.tags ?? [];
+    if (!currentTags.includes(trimmed)) {
+      onChange({ tags: [...currentTags, trimmed] });
+    }
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const currentTags = note.tags ?? [];
+    onChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
+  };
+
   const onPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault();
     const html = event.clipboardData.getData("text/html");
@@ -227,6 +244,40 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
           <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
             {formatFullDate(note.updatedAt)}
           </time>
+          <div className="editor-tags" aria-label="Etiketler">
+            {(note.tags ?? []).map((tag) => (
+              <span key={tag} className="tag-chip">
+                <span>#{tag}</span>
+                <button
+                  type="button"
+                  className="tag-remove"
+                  aria-label={`${tag} etiketini kaldır`}
+                  onClick={() => handleRemoveTag(tag)}
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              className="tag-input"
+              aria-label="Etiket ekle"
+              placeholder="Etiket ekle..."
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  handleAddTag(tagInput);
+                }
+              }}
+              onBlur={() => {
+                if (tagInput.trim()) {
+                  handleAddTag(tagInput);
+                }
+              }}
+            />
+          </div>
           <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder="Başlık"
             defaultValue={note.title}
             onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
