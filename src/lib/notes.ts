@@ -349,3 +349,87 @@ export function noteToMarkdown(note: Note): string {
 export function notesToJson(notes: Note[]): string {
   return JSON.stringify(notes, null, 2);
 }
+
+export type ImportNotesResult = {
+  importedCount: number;
+  skippedCount: number;
+  notes: Note[];
+};
+
+/** JSON dizesini doğrular, ayrıştırır ve mevcut notlarla kimlik çakışmalarını atlayarak birleştirir. */
+export function importNotesFromJson(
+  jsonText: string,
+  currentNotes: Note[]
+): ImportNotesResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    throw new Error("Geçersiz JSON dosyası. Lütfen geçerli bir JSON dosyası seçin.");
+  }
+
+  let items: unknown[];
+  if (Array.isArray(parsed)) {
+    items = parsed;
+  } else if (parsed && typeof parsed === "object" && Array.isArray((parsed as Record<string, unknown>).notes)) {
+    items = (parsed as Record<string, unknown>).notes as unknown[];
+  } else {
+    throw new Error("Dosya uyumsuz veya geçerli bir not yapısı içermiyor.");
+  }
+
+  const existingIds = new Set(currentNotes.map((n) => n.id));
+  const seenImportIds = new Set<string>();
+  const importedNotes: Note[] = [];
+  let skippedCount = 0;
+
+  for (const item of items) {
+    if (!item || typeof item !== "object") {
+      skippedCount++;
+      continue;
+    }
+    const r = item as Record<string, unknown>;
+    const id = typeof r.id === "string" ? r.id.trim() : "";
+    if (!id) {
+      skippedCount++;
+      continue;
+    }
+    if (existingIds.has(id) || seenImportIds.has(id)) {
+      skippedCount++;
+      continue;
+    }
+
+    const title = typeof r.title === "string" ? r.title.trim() : "";
+    const html = typeof r.html === "string" ? sanitizeHtml(r.html) : "";
+    if (!title && !html) {
+      skippedCount++;
+      continue;
+    }
+
+    seenImportIds.add(id);
+    const num = (v: unknown, fb: number) => (typeof v === "number" && Number.isFinite(v) ? v : fb);
+    const now = Date.now();
+    const createdAt = num(r.createdAt, now);
+    const updatedAt = num(r.updatedAt, createdAt);
+    const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
+    const dueDate = typeof r.dueDate === "string" && r.dueDate.trim() ? r.dueDate.trim() : undefined;
+    const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0) : [];
+
+    importedNotes.push({
+      id,
+      title,
+      html,
+      pinned: r.pinned === true,
+      createdAt,
+      updatedAt,
+      deletedAt,
+      dueDate,
+      tags,
+    });
+  }
+
+  return {
+    importedCount: importedNotes.length,
+    skippedCount,
+    notes: [...importedNotes, ...currentNotes],
+  };
+}
