@@ -780,3 +780,46 @@ mark,
 .animate-toast-in {
   animation: toast-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Tag Badges and Input Styles */
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: var(--hover);
+  color: var(--text);
+  border: 1px solid var(--line);
+  transition: all 0.15s ease;
+}
+
+.tag-badge-selected {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.tag-badge-filter {
+  cursor: pointer;
+  user-select: none;
+}
+
+.tag-badge-filter:hover {
+  background-color: var(--selected);
+  color: var(--selected-text);
+}
+
+.tag-suggestion-item {
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tag-suggestion-item:hover,
+.tag-suggestion-item[aria-selected="true"] {
+  background-color: var(--hover);
+}

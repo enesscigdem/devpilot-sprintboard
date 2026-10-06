@@ -1,15 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
   Pin, PinOff, Trash2, Undo2, Redo2, X,
 } from "lucide-react";
 import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes";
 
+type TagSuggestion = { name: string; count?: number } | string;
+
 type Props = {
   note: Note;
   onChange: (patch: { title?: string; html?: string; tags?: string[] }) => void;
   onTogglePin: () => void;
   onDelete: () => void;
+  allTags?: TagSuggestion[] | Record<string, number>;
+  suggestions?: TagSuggestion[] | Record<string, number>;
 };
 
 type Active = Record<string, boolean>;
@@ -23,7 +27,7 @@ const BLOCKS = [
 
 const run = (command: string, value?: string) => document.execCommand(command, false, value);
 
-export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Props) {
+export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allTags, suggestions }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const [active, setActive] = useState<Active>({});
@@ -31,6 +35,34 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [words, setWords] = useState(() => wordCount(note.html));
   const [tagInput, setTagInput] = useState("");
+  const [tagError, setTagError] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [announce, setAnnounce] = useState("");
+
+  const currentTags = useMemo(() => note.tags ?? [], [note.tags]);
+
+  const suggestionsList = useMemo(() => {
+    const source = allTags || suggestions;
+    if (!source) return [];
+    if (Array.isArray(source)) {
+      return source.map((item) => (typeof item === "string" ? { name: item } : item));
+    }
+    if (typeof source === "object") {
+      return Object.entries(source).map(([name, count]) => ({
+        name,
+        count: typeof count === "number" ? count : undefined,
+      }));
+    }
+    return [];
+  }, [allTags, suggestions]);
+
+  const filteredSuggestions = useMemo(() => {
+    return suggestionsList.filter(
+      (s) =>
+        !currentTags.includes(s.name) &&
+        (!tagInput.trim() || s.name.toLowerCase().includes(tagInput.trim().toLowerCase()))
+    );
+  }, [suggestionsList, currentTags, tagInput]);
 
   // Not değişince editör içeriğini yükle; yazarken içerik kullanıcıdadır.
   useEffect(() => {
@@ -166,19 +198,37 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
 
   };
 
+  const MAX_TAG_LENGTH = 30;
+
   const handleAddTag = (rawTag: string) => {
     const trimmed = rawTag.trim().replace(/^#+/, "").trim();
-    if (!trimmed) return;
-    const currentTags = note.tags ?? [];
-    if (!currentTags.includes(trimmed)) {
-      onChange({ tags: [...currentTags, trimmed] });
+    if (!trimmed) {
+      setTagError("Lütfen geçerli bir etiket girin.");
+      return;
     }
+    if (trimmed.length > MAX_TAG_LENGTH) {
+      setTagError(`Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`);
+      return;
+    }
+    if (/[\s,]/.test(trimmed)) {
+      setTagError("Etiket boşluk veya virgül içeremez.");
+      return;
+    }
+    if (currentTags.includes(trimmed)) {
+      setTagError("Bu etiket zaten eklenmiş.");
+      return;
+    }
+    setTagError(null);
+    setAnnounce(`"${trimmed}" etiketi eklendi`);
+    onChange({ tags: [...currentTags, trimmed] });
     setTagInput("");
+    setShowSuggestions(false);
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    const currentTags = note.tags ?? [];
+    setAnnounce(`"${tagToRemove}" etiketi kaldırıldı`);
     onChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
+    setTagError(null);
   };
 
   const onPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
@@ -246,39 +296,84 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
             defaultValue={note.title}
             onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
-          <div className="editor-tags" aria-label="Etiketler">
-            {(note.tags ?? []).map((tag) => (
-              <span key={tag} className="tag-chip">
-                <span>#{tag}</span>
-                <button
-                  type="button"
-                  className="tag-remove"
-                  aria-label={`${tag} etiketini kaldır`}
-                  onClick={() => handleRemoveTag(tag)}
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              className="tag-input"
-              aria-label="Etiket ekle"
-              placeholder="Etiket ekle..."
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === ",") {
-                  e.preventDefault();
-                  handleAddTag(tagInput);
-                }
-              }}
-              onBlur={() => {
-                if (tagInput.trim()) {
-                  handleAddTag(tagInput);
-                }
-              }}
-            />
+          <div className="editor-tags-container">
+            <div className="editor-tags" aria-label="Etiketler">
+              <div className="sr-only" aria-live="polite" aria-atomic="true">
+                {announce}
+              </div>
+              {currentTags.map((tag) => (
+                <span key={tag} className="tag-chip">
+                  <span>#{tag}</span>
+                  <button
+                    type="button"
+                    className="tag-remove"
+                    aria-label={`"${tag}" etiketini kaldır`}
+                    onClick={() => handleRemoveTag(tag)}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              <div className="tag-input-wrapper">
+                <input
+                  type="text"
+                  className="tag-input"
+                  aria-label="Etiket ekle"
+                  placeholder="Etiket ekle..."
+                  value={tagInput}
+                  onFocus={() => setShowSuggestions(true)}
+                  onChange={(e) => {
+                    setTagInput(e.target.value);
+                    if (tagError) setTagError(null);
+                    setShowSuggestions(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      if (tagInput.trim()) {
+                        handleAddTag(tagInput);
+                      }
+                    } else if (e.key === "Backspace" && !tagInput && currentTags.length > 0) {
+                      handleRemoveTag(currentTags[currentTags.length - 1]);
+                    } else if (e.key === "Escape") {
+                      setShowSuggestions(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (tagInput.trim()) {
+                      handleAddTag(tagInput);
+                    }
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
+                />
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                  <ul className="tag-suggestions" role="listbox" aria-label="Etiket önerileri">
+                    {filteredSuggestions.map((s) => (
+                      <li
+                        key={s.name}
+                        role="option"
+                        aria-selected={false}
+                        className="tag-suggestion-item"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleAddTag(s.name);
+                        }}
+                      >
+                        <span>#{s.name}</span>
+                        {typeof s.count === "number" && (
+                          <span className="tag-count">({s.count})</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            {tagError && (
+              <div className="tag-error" role="alert">
+                {tagError}
+              </div>
+            )}
           </div>
           <div ref={bodyRef} className="editor-body" contentEditable suppressContentEditableWarning role="textbox"
             aria-multiline="true" aria-label="Not içeriği" data-placeholder="Yazmaya başla…"
