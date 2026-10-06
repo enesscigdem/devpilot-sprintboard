@@ -23,7 +23,7 @@ export default function App() {
   const [draft, setDraft] = useState<Note | null>(null);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(() => {
-    const first = [...loadNotes()].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    const first = [...loadNotes()].filter((n) => !n.deletedAt).sort((a, b) => b.updatedAt - a.updatedAt)[0];
     return first?.id ?? null;
   });
   const [mobilePane, setMobilePane] = useState<"list" | "editor">("list");
@@ -107,25 +107,33 @@ export default function App() {
     const target = notes.find((n) => n.id === id) || (draft && draft.id === id ? draft : null);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
 
-    if (target && (target.title.trim() || htmlToText(target.html))) {
-      setDeletedNote(target);
+    const isNonEmpty = target && (target.title.trim() || htmlToText(target.html));
+    if (isNonEmpty && target) {
+      const trashed = { ...target, deletedAt: Date.now() };
+      setDeletedNote(trashed);
       undoTimerRef.current = setTimeout(() => {
         setDeletedNote(null);
       }, 5000);
+
+      setDraft(null);
+      setNotes((prev) => {
+        const exists = prev.some((n) => n.id === id);
+        if (exists) {
+          return prev.map((n) => (n.id === id ? trashed : n));
+        }
+        return [trashed, ...prev];
+      });
     } else {
       setDeletedNote(null);
+      if (draft && draft.id === id) {
+        setDraft(null);
+      }
+      setNotes((prev) => prev.filter((n) => n.id !== id));
     }
 
-    if (draft && draft.id === id) {
-      setDraft(null);
-      const next = [...notes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
-      setSelectedId(next?.id ?? null);
-      if (!next) setMobilePane("list");
-      return;
-    }
-    const remaining = notes.filter((n) => n.id !== id);
-    setNotes(remaining);
-    const next = [...remaining].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    const next = notes
+      .filter((n) => !n.deletedAt && n.id !== id)
+      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
     setSelectedId(next?.id ?? null);
     if (!next) setMobilePane("list");
   };
@@ -134,7 +142,8 @@ export default function App() {
     if (!deletedNote) return;
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     setDraft(null);
-    setNotes((prev) => [deletedNote, ...prev.filter((n) => n.id !== deletedNote.id)]);
+    const restored: Note = { ...deletedNote, deletedAt: undefined };
+    setNotes((prev) => [restored, ...prev.filter((n) => n.id !== deletedNote.id)]);
     setSelectedId(deletedNote.id);
     setMobilePane("editor");
     setDeletedNote(null);
@@ -142,7 +151,14 @@ export default function App() {
 
   const needle = query.trim().toLocaleLowerCase("tr");
   const visible = useMemo(
-    () => notes.filter((n) => !needle || n.title.toLocaleLowerCase("tr").includes(needle) || htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
+    () =>
+      notes.filter(
+        (n) =>
+          !n.deletedAt &&
+          (!needle ||
+            n.title.toLocaleLowerCase("tr").includes(needle) ||
+            htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
+      ),
     [notes, needle],
   );
 
@@ -179,8 +195,8 @@ export default function App() {
     }
   };
   const groups = useMemo(() => groupNotes(visible), [visible]);
-  const selected = (draft && draft.id === selectedId) ? draft : (notes.find((n) => n.id === selectedId) ?? null);
-  const realCount = notes.filter((n) => !isEmpty(n)).length;
+  const selected = (draft && draft.id === selectedId) ? draft : (notes.find((n) => n.id === selectedId && !n.deletedAt) ?? null);
+  const realCount = notes.filter((n) => !n.deletedAt && !isEmpty(n)).length;
 
   return (
     <div className="app" data-pane={mobilePane}>
@@ -267,7 +283,7 @@ export default function App() {
             <button type="button" className="back-button" onClick={() => {
               setDraft(null);
               if (draft && selectedId === draft.id) {
-                const next = [...notes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+                const next = [...notes].filter((n) => !n.deletedAt).sort((a, b) => b.updatedAt - a.updatedAt)[0];
                 setSelectedId(next?.id ?? null);
               }
               setMobilePane("list");
