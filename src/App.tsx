@@ -6,9 +6,65 @@ import {
   createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, noteToMarkdown, notesToJson, sanitizeFilename, saveNotes, type Note,
 } from "./lib/notes";
 
-const preview = (note: Note) => {
-  const text = htmlToText(note.html);
-  return text || "Ek metin yok";
+function normalizeForSearch(str: string): string {
+  return str
+    .toLocaleLowerCase("tr")
+    .toLowerCase()
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c");
+}
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  const normQuery = normalizeForSearch(query.trim());
+  if (!normQuery) return text;
+
+  const normText = normalizeForSearch(text);
+  if (!normText.includes(normQuery)) return text;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let matchIndex = normText.indexOf(normQuery, lastIndex);
+
+  while (matchIndex !== -1) {
+    if (matchIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, matchIndex));
+    }
+    parts.push(
+      <mark key={matchIndex}>
+        {text.slice(matchIndex, matchIndex + normQuery.length)}
+      </mark>
+    );
+    lastIndex = matchIndex + normQuery.length;
+    matchIndex = normText.indexOf(normQuery, lastIndex);
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return <>{parts}</>;
+}
+
+const renderPreview = (note: Note, query: string): React.ReactNode => {
+  const raw = htmlToText(note.html);
+  if (!raw) return "Ek metin yok";
+  const trimmed = query.trim();
+  if (!trimmed) return raw;
+
+  const normText = normalizeForSearch(raw);
+  const normQuery = normalizeForSearch(trimmed);
+  const idx = normText.indexOf(normQuery);
+
+  if (idx > 20) {
+    const start = Math.max(0, idx - 10);
+    const snippet = (start > 0 ? "… " : "") + raw.slice(start);
+    return highlightMatch(snippet, trimmed);
+  }
+
+  return highlightMatch(raw, trimmed);
 };
 
 export default function App() {
@@ -188,15 +244,15 @@ export default function App() {
     downloadFile(md, filename, "text/markdown;charset=utf-8");
   };
 
-  const needle = query.trim().toLocaleLowerCase("tr");
+  const needle = normalizeForSearch(query.trim());
   const visible = useMemo(
     () =>
       notes.filter(
         (n) =>
           !n.deletedAt &&
           (!needle ||
-            n.title.toLocaleLowerCase("tr").includes(needle) ||
-            htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
+            normalizeForSearch(n.title).includes(needle) ||
+            normalizeForSearch(htmlToText(n.html)).includes(needle)),
       ),
     [notes, needle],
   );
@@ -302,7 +358,7 @@ export default function App() {
                       <span className="note-row-title">
                         {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-                          {note.title.trim() || "Yeni Not"}
+                          {note.title.trim() ? highlightMatch(note.title.trim(), query) : "Yeni Not"}
                         </span>
                         {note.dueDate && (
                           <span className="due-date-badge" style={{
@@ -321,7 +377,7 @@ export default function App() {
                       </span>
                       <span className="note-row-meta">
                         <time>{formatListDate(note.updatedAt)}</time>
-                        <span className="note-row-preview">{preview(note)}</span>
+                        <span className="note-row-preview">{renderPreview(note, query)}</span>
                       </span>
                     </button>
                   </li>
@@ -330,7 +386,16 @@ export default function App() {
             </section>
           ))}
           {groups.length === 0 && (
-            <p className="list-empty">{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+            needle ? (
+              <div className="list-empty">
+                <div>Sonuç bulunamadı</div>
+                <button type="button" className="list-empty-link" onClick={() => setQuery("")}>
+                  Aramayı temizle
+                </button>
+              </div>
+            ) : (
+              <p className="list-empty">Henüz not yok</p>
+            )
           )}
         </nav>
       </aside>

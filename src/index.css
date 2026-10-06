@@ -193,6 +193,27 @@ button { cursor: pointer; }
 .note-row-preview { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 .list-empty { margin: 36px 16px; text-align: center; font-size: 14px; color: var(--text-3); }
+.list-empty button, .list-empty-link {
+  display: inline-block;
+  margin-top: 6px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--link);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+mark {
+  background: var(--selected);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.note-row[aria-current="true"] mark {
+  background: rgba(255, 255, 255, 0.25);
+}
 
 /* ---------- Detay ---------- */
 .detail { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
