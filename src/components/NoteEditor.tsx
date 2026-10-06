@@ -35,6 +35,7 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
   // Not değişince editör içeriğini yükle; yazarken içerik kullanıcıdadır.
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.innerHTML = note.html;
+    if (titleRef.current) titleRef.current.value = note.title;
     setWords(wordCount(note.html));
     setConfirmDelete(false);
     setTagInput("");
@@ -162,10 +163,7 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
         }, 0);
       }
     }
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      addLink();
-    }
+
   };
 
   const handleAddTag = (rawTag: string) => {
