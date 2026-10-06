@@ -1,10 +1,101 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Download, FileDown, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
   createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
+
+interface ToastNotification {
+  id: string;
+  type: "success" | "error" | "info" | "warning";
+  title: string;
+  description?: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  duration?: number;
+}
+
+function ToastItem({ toast, onDismiss }: { toast: ToastNotification; onDismiss: (id: string) => void }) {
+  const [isPaused, setIsPaused] = useState(false);
+  const remainingRef = useRef(toast.duration ?? 4500);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (isPaused) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startTimeRef.current));
+      return;
+    }
+
+    startTimeRef.current = Date.now();
+    timerRef.current = setTimeout(() => {
+      onDismiss(toast.id);
+    }, remainingRef.current);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [isPaused, toast.id, onDismiss]);
+
+  const icons = {
+    success: <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />,
+    error: <AlertCircle size={18} className="text-rose-500 shrink-0" />,
+    warning: <AlertTriangle size={18} className="text-amber-500 shrink-0" />,
+    info: <Info size={18} className="text-blue-500 shrink-0" />,
+  };
+
+  const bgStyles = {
+    success: "border-emerald-500/20 bg-white dark:bg-[#252528] text-slate-800 dark:text-slate-100",
+    error: "border-rose-500/20 bg-white dark:bg-[#252528] text-slate-800 dark:text-slate-100",
+    warning: "border-amber-500/20 bg-white dark:bg-[#252528] text-slate-800 dark:text-slate-100",
+    info: "border-blue-500/20 bg-white dark:bg-[#252528] text-slate-800 dark:text-slate-100",
+  };
+
+  return (
+    <div
+      role="status"
+      aria-live={toast.type === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
+      className={`toast-item animate-toast-in flex items-start gap-3 p-3.5 rounded-xl border shadow-lg max-w-md w-full pointer-events-auto transition-all ${bgStyles[toast.type]}`}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div className="pt-0.5">{icons[toast.type]}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold leading-tight">{toast.title}</div>
+        {toast.description && (
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+            {toast.description}
+          </div>
+        )}
+        {toast.action && (
+          <button
+            type="button"
+            className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+            onClick={() => {
+              toast.action?.onClick();
+              onDismiss(toast.id);
+            }}
+          >
+            {toast.action.label}
+          </button>
+        )}
+      </div>
+      <button
+        type="button"
+        aria-label="Kapat"
+        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded transition-colors -mr-1 -mt-1"
+        onClick={() => onDismiss(toast.id)}
+      >
+        <X size={15} />
+      </button>
+    </div>
+  );
+}
 
 function normalizeText(text: string): string {
   return text.toLocaleLowerCase("tr");
@@ -93,8 +184,10 @@ export default function App() {
   const [deletedNote, setDeletedNote] = useState<Note | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [importStatus, setImportStatus] = useState<{ message: string; isError?: boolean } | null>(null);
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const removeToast = (id: string) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -724,6 +817,12 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <aside className="toast-container" aria-label="Bildirimler" aria-live="polite">
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
+        ))}
+      </aside>
     </div>
   );
 }
