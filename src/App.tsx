@@ -13,6 +13,7 @@ const preview = (note: Note) => {
 
 export default function App() {
   const [notes, setNotes] = useState<Note[]>(loadNotes);
+  const [draft, setDraft] = useState<Note | null>(null);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const first = [...loadNotes()].sort((a, b) => b.updatedAt - a.updatedAt)[0];
@@ -41,31 +42,49 @@ export default function App() {
 
   /** Başka nota geçerken boş kalan notu temizler. */
   const select = (id: string | null) => {
-    setNotes((prev) => prev.filter((n) => n.id === id || !isEmpty(n)));
+    setDraft(null);
     setSelectedId(id);
     if (id) setMobilePane("editor");
   };
 
   const addNote = () => {
-    const existingEmpty = notes.find(isEmpty);
-    if (existingEmpty) {
-      setSelectedId(existingEmpty.id);
-    } else {
-      const note = createNote();
-      setNotes((prev) => [note, ...prev]);
-      setSelectedId(note.id);
-    }
+    const note = createNote();
+    setDraft(note);
+    setSelectedId(note.id);
     setQuery("");
     setMobilePane("editor");
   };
 
-  const patchNote = (id: string, patch: { title?: string; html?: string }) =>
+  const patchNote = (id: string, patch: Partial<Note>) => {
+    if (draft && draft.id === id) {
+      const updated = { ...draft, ...patch, updatedAt: Date.now() };
+      if (updated.title.trim() || htmlToText(updated.html)) {
+        setNotes((prev) => [updated, ...prev]);
+        setDraft(null);
+      } else {
+        setDraft(updated);
+      }
+      return;
+    }
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)));
+  };
 
-  const togglePin = (id: string) =>
+  const togglePin = (id: string) => {
+    if (draft && draft.id === id) {
+      setDraft((prev) => (prev ? { ...prev, pinned: !prev.pinned } : null));
+      return;
+    }
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n)));
+  };
 
   const deleteNote = (id: string) => {
+    if (draft && draft.id === id) {
+      setDraft(null);
+      const next = [...notes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      setSelectedId(next?.id ?? null);
+      if (!next) setMobilePane("list");
+      return;
+    }
     const remaining = notes.filter((n) => n.id !== id);
     setNotes(remaining);
     const next = [...remaining].sort((a, b) => b.updatedAt - a.updatedAt)[0];
@@ -79,7 +98,7 @@ export default function App() {
     [notes, needle],
   );
   const groups = useMemo(() => groupNotes(visible), [visible]);
-  const selected = notes.find((n) => n.id === selectedId) ?? null;
+  const selected = (draft && draft.id === selectedId) ? draft : (notes.find((n) => n.id === selectedId) ?? null);
   const realCount = notes.filter((n) => !isEmpty(n)).length;
 
   return (
@@ -152,7 +171,14 @@ export default function App() {
       <main className="detail">
         {selected ? (
           <>
-            <button type="button" className="back-button" onClick={() => setMobilePane("list")}>
+            <button type="button" className="back-button" onClick={() => {
+              setDraft(null);
+              if (draft && selectedId === draft.id) {
+                const next = [...notes].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+                setSelectedId(next?.id ?? null);
+              }
+              setMobilePane("list");
+            }}>
               <ChevronLeft size={20} />Notlar
             </button>
             <NoteEditor

@@ -228,7 +228,7 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete }: Pr
             {formatFullDate(note.updatedAt)}
           </time>
           <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder="Başlık"
-            value={note.title}
+            defaultValue={note.title}
             onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
           <div ref={bodyRef} className="editor-body" contentEditable suppressContentEditableWarning role="textbox"
