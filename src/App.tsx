@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Download, FileDown, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
-  createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, type Note,
+  createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
 
 function normalizeText(text: string): string {
@@ -75,6 +75,15 @@ export default function App() {
   const [draft, setDraft] = useState<Note | null>(null);
   const [currentView, setCurrentView] = useState<"notes" | "trash">("notes");
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<NoteSortOption>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(NOTE_SORT_KEY);
+      if (saved === "updatedAt" || saved === "createdAt" || saved === "title") {
+        return saved;
+      }
+    }
+    return "updatedAt";
+  });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const first = [...loadNotes()].filter((n) => !n.deletedAt).sort((a, b) => b.updatedAt - a.updatedAt)[0];
@@ -372,7 +381,7 @@ export default function App() {
       }
     }
   };
-  const groups = useMemo(() => groupNotes(visible), [visible]);
+  const groups = useMemo(() => groupNotes(visible).map((group) => ({ ...group, notes: sortNotes(group.notes, sortBy) })), [visible, sortBy]);
   const selected = (draft && draft.id === selectedId)
     ? draft
     : (notes.find((n) => n.id === selectedId && (currentView === "trash" ? Boolean(n.deletedAt) : !n.deletedAt)) ?? null);
@@ -447,6 +456,16 @@ export default function App() {
             </button>
           )}
         </div>
+        {currentView === "notes" && (
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px" }}>
+            <span style={{ fontSize: "12px" }}>Sırala:</span>
+            <select aria-label="Notları sırala" value={sortBy} onChange={(e) => setSortBy(e.target.value as NoteSortOption)}>
+              <option value="updatedAt">Son güncellenen</option>
+              <option value="createdAt">Oluşturulma tarihi</option>
+              <option value="title">Başlık</option>
+            </select>
+          </label>
+        )}
         {currentView === "notes" && allTags.length > 0 && (
           <div className="tag-filters" aria-label="Etiket filtreleri">
             {allTags.map((tag) => (
