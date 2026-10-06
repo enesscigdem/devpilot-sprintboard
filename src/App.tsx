@@ -1,9 +1,9 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Download, FileDown, Moon, Pin, Search, SquarePen, StickyNote, Sun, X } from "lucide-react";
+import { ChevronLeft, Download, FileDown, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
-  createNote, formatListDate, formatDueDate, isOverdue, groupNotes, htmlToText, loadNotes, noteToMarkdown, notesToJson, sanitizeFilename, saveNotes, type Note,
+  createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, type Note,
 } from "./lib/notes";
 
 const preview = (note: Note) => {
@@ -21,6 +21,7 @@ export default function App() {
   });
   const [notes, setNotes] = useState<Note[]>(loadNotes);
   const [draft, setDraft] = useState<Note | null>(null);
+  const [currentView, setCurrentView] = useState<"notes" | "trash">("notes");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const first = [...loadNotes()].filter((n) => !n.deletedAt).sort((a, b) => b.updatedAt - a.updatedAt)[0];
@@ -88,11 +89,32 @@ export default function App() {
   };
 
   const addNote = () => {
+    setCurrentView("notes");
     const note = createNote();
     setDraft(note);
     setSelectedId(note.id);
     setQuery("");
     setMobilePane("editor");
+  };
+
+  const handleRestore = (id: string) => {
+    setNotes((prev) => restoreNote(prev, id));
+    setCurrentView("notes");
+    setSelectedId(id);
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    if (window.confirm("Bu notu kalıcı olarak silmek istediğinize emin misiniz?")) {
+      setNotes((prev) => permanentlyDeleteNote(prev, id));
+      setSelectedId(null);
+    }
+  };
+
+  const handleEmptyTrash = () => {
+    if (window.confirm("Çöp kutusundaki tüm notları kalıcı olarak silmek istediğinize emin misiniz?")) {
+      setNotes((prev) => emptyTrash(prev));
+      setSelectedId(null);
+    }
   };
 
   const patchNote = (id: string, patch: Partial<Note>) => {
@@ -189,6 +211,7 @@ export default function App() {
   };
 
   const needle = query.trim().toLocaleLowerCase("tr");
+  const trashNotes = useMemo(() => getTrashNotes(notes), [notes]);
   const visible = useMemo(
     () =>
       notes.filter(
@@ -200,23 +223,35 @@ export default function App() {
       ),
     [notes, needle],
   );
+  const trashVisible = useMemo(
+    () =>
+      trashNotes.filter(
+        (n) =>
+          !needle ||
+          n.title.toLocaleLowerCase("tr").includes(needle) ||
+          htmlToText(n.html).toLocaleLowerCase("tr").includes(needle),
+      ),
+    [trashNotes, needle],
+  );
+
+  const activeListItems = currentView === "trash" ? trashVisible : visible;
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      if (visible.length === 0) return;
-      const idx = visible.findIndex((n) => n.id === selectedId);
+      if (activeListItems.length === 0) return;
+      const idx = activeListItems.findIndex((n) => n.id === selectedId);
       let nextIdx: number;
       if (e.key === "ArrowDown") {
-        nextIdx = idx === -1 ? 0 : Math.min(idx + 1, visible.length - 1);
+        nextIdx = idx === -1 ? 0 : Math.min(idx + 1, activeListItems.length - 1);
       } else {
-        nextIdx = idx === -1 ? visible.length - 1 : Math.max(idx - 1, 0);
+        nextIdx = idx === -1 ? activeListItems.length - 1 : Math.max(idx - 1, 0);
       }
-      setSelectedId(visible[nextIdx].id);
+      setSelectedId(activeListItems[nextIdx].id);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (visible.length > 0) {
-        const targetId = visible.find((n) => n.id === selectedId)?.id ?? visible[0].id;
+      if (activeListItems.length > 0) {
+        const targetId = activeListItems.find((n) => n.id === selectedId)?.id ?? activeListItems[0].id;
         select(targetId);
         searchRef.current?.blur();
         const titleEl = document.querySelector<HTMLTextAreaElement>(".editor-title");
@@ -234,7 +269,9 @@ export default function App() {
     }
   };
   const groups = useMemo(() => groupNotes(visible), [visible]);
-  const selected = (draft && draft.id === selectedId) ? draft : (notes.find((n) => n.id === selectedId && !n.deletedAt) ?? null);
+  const selected = (draft && draft.id === selectedId)
+    ? draft
+    : (notes.find((n) => n.id === selectedId && (currentView === "trash" ? Boolean(n.deletedAt) : !n.deletedAt)) ?? null);
   const realCount = notes.filter((n) => !n.deletedAt && !isEmpty(n)).length;
 
   return (
@@ -242,8 +279,8 @@ export default function App() {
       <aside className="sidebar" aria-label="Notlar">
         <header className="sidebar-header">
           <div className="sidebar-title">
-            <h1>Notlar</h1>
-            <span className="sidebar-count">{realCount} not</span>
+            <h1>{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}</h1>
+            <span className="sidebar-count">{currentView === "trash" ? `${trashNotes.length} not` : `${realCount} not`}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <button
@@ -290,47 +327,106 @@ export default function App() {
             </button>
           )}
         </div>
-        <nav className="note-list" aria-label="Not listesi">
-          {groups.map((group) => (
-            <section key={group.label} aria-label={group.label}>
-              <h2 className="group-label">{group.label}</h2>
+        <button
+          type="button"
+          className={`trash-nav ${currentView === "trash" ? "active" : ""}`}
+          aria-current={currentView === "trash" ? "true" : undefined}
+          onClick={() => {
+            setCurrentView((prev) => (prev === "trash" ? "notes" : "trash"));
+            setDraft(null);
+            setSelectedId(null);
+          }}
+        >
+          <Trash2 size={16} />
+          <span>Çöp Kutusu</span>
+          {trashNotes.length > 0 && <span className="trash-nav-badge">{trashNotes.length}</span>}
+        </button>
+        {currentView === "trash" && trashNotes.length > 0 && (
+          <div style={{ padding: "0 10px 8px", display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              className="danger-button"
+              onClick={handleEmptyTrash}
+              style={{ fontSize: "12px", padding: "4px 10px" }}
+            >
+              <Trash2 size={13} />
+              Çöp kutusunu boşalt
+            </button>
+          </div>
+        )}
+        <nav className="note-list" aria-label={currentView === "trash" ? "Çöp kutusu listesi" : "Not listesi"}>
+          {currentView === "trash" ? (
+            <>
               <ul>
-                {group.notes.map((note) => (
+                {trashVisible.map((note) => (
                   <li key={note.id} style={{ minWidth: 0 }}>
-                    <button type="button" className="note-row" aria-current={note.id === selectedId ? "true" : undefined}
-                      onClick={() => select(note.id)}>
+                    <button
+                      type="button"
+                      className="note-row"
+                      aria-current={note.id === selectedId ? "true" : undefined}
+                      onClick={() => select(note.id)}
+                    >
                       <span className="note-row-title">
-                        {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
                           {note.title.trim() || "Yeni Not"}
                         </span>
-                        {note.dueDate && (
-                          <span className="due-date-badge" style={{
-                            fontSize: "11px",
-                            fontWeight: 500,
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            background: isOverdue(note.dueDate) ? "var(--due-badge-bg)" : "var(--hover)",
-                            color: isOverdue(note.dueDate) ? "var(--due-overdue)" : "var(--text-2)",
-                            marginLeft: "auto",
-                            flexShrink: 0
-                          }}>
-                            {formatDueDate(note.dueDate)}
-                          </span>
-                        )}
                       </span>
                       <span className="note-row-meta">
-                        <time>{formatListDate(note.updatedAt)}</time>
+                        {note.deletedAt && <time className="trash-date">{formatListDate(note.deletedAt)}</time>}
                         <span className="note-row-preview">{preview(note)}</span>
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
-            </section>
-          ))}
-          {groups.length === 0 && (
-            <p className="list-empty">{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+              {trashVisible.length === 0 && (
+                <p className="list-empty">{needle ? "Eşleşen silinen not yok" : "Çöp kutusu boş"}</p>
+              )}
+            </>
+          ) : (
+            <>
+              {groups.map((group) => (
+                <section key={group.label} aria-label={group.label}>
+                  <h2 className="group-label">{group.label}</h2>
+                  <ul>
+                    {group.notes.map((note) => (
+                      <li key={note.id} style={{ minWidth: 0 }}>
+                        <button type="button" className="note-row" aria-current={note.id === selectedId ? "true" : undefined}
+                          onClick={() => select(note.id)}>
+                          <span className="note-row-title">
+                            {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
+                              {note.title.trim() || "Yeni Not"}
+                            </span>
+                            {note.dueDate && (
+                              <span className="due-date-badge" style={{
+                                fontSize: "11px",
+                                fontWeight: 500,
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                background: isOverdue(note.dueDate) ? "var(--due-badge-bg)" : "var(--hover)",
+                                color: isOverdue(note.dueDate) ? "var(--due-overdue)" : "var(--text-2)",
+                                marginLeft: "auto",
+                                flexShrink: 0
+                              }}>
+                                {formatDueDate(note.dueDate)}
+                              </span>
+                            )}
+                          </span>
+                          <span className="note-row-meta">
+                            <time>{formatListDate(note.updatedAt)}</time>
+                            <span className="note-row-preview">{preview(note)}</span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+              {groups.length === 0 && (
+                <p className="list-empty">{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+              )}
+            </>
           )}
         </nav>
       </aside>
@@ -346,24 +442,57 @@ export default function App() {
               }
               setMobilePane("list");
             }}>
-              <ChevronLeft size={20} />Notlar
+              <ChevronLeft size={20} />{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}
             </button>
+            {selected.deletedAt && (
+              <div className="trash-banner">
+                <p>Bu not çöp kutusunda.</p>
+                <div className="trash-actions">
+                  <button type="button" className="secondary-button" onClick={() => handleRestore(selected.id)}>
+                    <RotateCcw size={14} />Geri Yükle
+                  </button>
+                  <button type="button" className="danger-button" onClick={() => handlePermanentDelete(selected.id)}>
+                    <Trash2 size={14} />Kalıcı Olarak Sil
+                  </button>
+                </div>
+              </div>
+            )}
             <NoteEditor
               key={selected.id}
               note={selected}
-              onChange={(patch) => patchNote(selected.id, patch)}
-              onTogglePin={() => togglePin(selected.id)}
-              onDelete={() => deleteNote(selected.id)}
+              onChange={(patch) => {
+                if (!selected.deletedAt) patchNote(selected.id, patch);
+              }}
+              onTogglePin={() => {
+                if (!selected.deletedAt) togglePin(selected.id);
+              }}
+              onDelete={() => {
+                if (selected.deletedAt) {
+                  handlePermanentDelete(selected.id);
+                } else {
+                  deleteNote(selected.id);
+                }
+              }}
             />
           </>
         ) : (
           <div className="detail-empty">
-            <StickyNote size={44} strokeWidth={1.4} />
-            <h2>Not seçilmedi</h2>
-            <p>Soldan bir not seç veya yeni bir not oluştur.</p>
-            <button type="button" className="primary-button" onClick={addNote}>
-              <SquarePen size={16} />Yeni not
-            </button>
+            {currentView === "trash" ? (
+              <>
+                <Trash2 size={44} strokeWidth={1.4} />
+                <h2>Çöp Kutusu</h2>
+                <p>Silinen notları görüntülemek veya geri yüklemek için soldan bir not seçin.</p>
+              </>
+            ) : (
+              <>
+                <StickyNote size={44} strokeWidth={1.4} />
+                <h2>Not seçilmedi</h2>
+                <p>Soldan bir not seç veya yeni bir not oluştur.</p>
+                <button type="button" className="primary-button" onClick={addNote}>
+                  <SquarePen size={16} />Yeni not
+                </button>
+              </>
+            )}
           </div>
         )}
       </main>
