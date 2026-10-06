@@ -6,6 +6,8 @@ export type Note = {
   pinned: boolean;
   createdAt: number;
   updatedAt: number;
+  /** Çöp kutusuna taşınma zaman damgası veya undefined. */
+  deletedAt?: number;
   /** ISO 8601 tarih dizesi (YYYY-MM-DD) veya undefined. */
   dueDate?: string;
   tags: string[];
@@ -110,9 +112,10 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   const num = (v: unknown, fb: number) => (typeof v === "number" && Number.isFinite(v) ? v : fb);
   const now = Date.now();
   const createdAt = num(r.createdAt, now);
+  const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
   const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
   const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
-  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), dueDate, tags };
+  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags };
 }
 
 /** Eski görev kaydını (başlık, açıklama, durum) zengin bir nota çevirir. */
