@@ -14,8 +14,11 @@ export type Note = {
 };
 
 export const NOTES_KEY = "sprintboard.notes.v2";
+export const NOTE_SORT_KEY = "sprintboard.notes.sort";
 /** Eski görev panosu kayıtları; ilk açılışta notlara dönüştürülür. */
 export const LEGACY_TASKS_KEY = "sprintboard.tasks.v1";
+
+export type NoteSortOption = "updatedAt" | "createdAt" | "title";
 
 const ALLOWED_TAGS = new Set([
   "P", "BR", "DIV", "B", "STRONG", "I", "EM", "U", "S", "STRIKE", "H1", "H2", "H3",
@@ -184,6 +187,26 @@ export const permanentlyDeleteNote = (notes: Note[], id: string): Note[] =>
 
 export const emptyTrash = (notes: Note[]): Note[] =>
   notes.filter((n) => !n.deletedAt);
+
+/** Notları seçilen ölçüte göre sıralar; sabitlenmiş notlar her zaman başta kalır. */
+export function sortNotes(notes: Note[], sortBy: NoteSortOption = "updatedAt"): Note[] {
+  const pinned = notes.filter((n) => n.pinned);
+  const unpinned = notes.filter((n) => !n.pinned);
+
+  const compare = (a: Note, b: Note) => {
+    if (sortBy === "createdAt") {
+      return b.createdAt - a.createdAt;
+    }
+    if (sortBy === "title") {
+      const titleA = (a.title || htmlToText(a.html) || "").trim();
+      const titleB = (b.title || htmlToText(b.html) || "").trim();
+      return titleA.localeCompare(titleB, "tr-TR", { sensitivity: "base" });
+    }
+    return b.updatedAt - a.updatedAt;
+  };
+
+  return [...pinned.sort(compare), ...unpinned.sort(compare)];
+}
 
 export type NoteGroup = { label: string; notes: Note[] };
 
