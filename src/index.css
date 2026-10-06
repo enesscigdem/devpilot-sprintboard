@@ -823,3 +823,20 @@ mark,
 .tag-suggestion-item[aria-selected="true"] {
   background-color: var(--hover);
 }
+
+.sidebar-menu-dropdown {
+  background-color: var(--bg);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.sidebar-menu-item {
+  transition: background-color 0.15s ease;
+}
+
+.sidebar-menu-item:hover,
+.sidebar-menu-item:focus,
+.sidebar-menu-item:focus-visible {
+  background-color: var(--hover);
+  outline: none;
+}
