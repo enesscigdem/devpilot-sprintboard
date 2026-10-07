@@ -109,6 +109,22 @@ button { cursor: pointer; }
   grid-template-columns: minmax(280px, 340px) 1fr;
   height: 100%;
   overflow: hidden;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.app.focus-mode,
+.app[data-focus-mode="true"] {
+  grid-template-columns: 1fr;
+}
+
+.app.focus-mode .sidebar,
+.app[data-focus-mode="true"] .sidebar {
+  display: none !important;
+}
+
+.app.focus-mode .back-button,
+.app[data-focus-mode="true"] .back-button {
+  display: none !important;
 }
 
 .sidebar {
@@ -415,6 +431,28 @@ button { cursor: pointer; }
   min-height: 55vh; margin-top: 14px;
   outline: 0; font-size: 16.5px; line-height: 1.65;
   overflow-wrap: anywhere;
+}
+
+.editor-body.font-small,
+.editor-body[data-font-size="small"],
+.editor-body[data-font-size="sm"] {
+  font-size: 14px;
+}
+
+.editor-body.font-standard,
+.editor-body.font-normal,
+.editor-body.font-medium,
+.editor-body[data-font-size="standard"],
+.editor-body[data-font-size="medium"],
+.editor-body[data-font-size="normal"],
+.editor-body[data-font-size="md"] {
+  font-size: 16.5px;
+}
+
+.editor-body.font-large,
+.editor-body[data-font-size="large"],
+.editor-body[data-font-size="lg"] {
+  font-size: 19.5px;
 }
 .editor-body:empty::before { content: attr(data-placeholder); color: var(--text-3); pointer-events: none; }
 .editor-body > :first-child { margin-top: 0; }
