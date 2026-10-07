@@ -2,6 +2,7 @@ import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
+import ConfirmDialog from "./components/ConfirmDialog";
 import {
   createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
@@ -185,6 +186,7 @@ export default function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [importStatus, setImportStatus] = useState<{ message: string; isError?: boolean } | null>(null);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const [isConfirmTrashOpen, setIsConfirmTrashOpen] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const removeToast = (id: string) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -268,10 +270,13 @@ export default function App() {
   };
 
   const handleEmptyTrash = () => {
-    if (window.confirm("Çöp kutusundaki tüm notları kalıcı olarak silmek istediğinize emin misiniz?")) {
-      setNotes((prev) => emptyTrash(prev));
-      setSelectedId(null);
-    }
+    setIsConfirmTrashOpen(true);
+  };
+
+  const handleConfirmEmptyTrash = () => {
+    setNotes((prev) => emptyTrash(prev));
+    setSelectedId(null);
+    setIsConfirmTrashOpen(false);
   };
 
   const patchNote = (id: string, patch: Partial<Note>) => {
@@ -817,6 +822,16 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={isConfirmTrashOpen}
+        title="Çöp Kutusunu Boşalt"
+        message="Çöp kutusundaki tüm notlar kalıcı olarak silinecektir. Bu işlem geri alınamaz. Emin misiniz?"
+        confirmText="Çöpü Boşalt"
+        cancelText="İptal"
+        onConfirm={handleConfirmEmptyTrash}
+        onClose={() => setIsConfirmTrashOpen(false)}
+      />
 
       <aside className="toast-container" aria-label="Bildirimler" aria-live="polite">
         {toasts.map((toast) => (
