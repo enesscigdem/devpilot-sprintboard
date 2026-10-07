@@ -103,6 +103,16 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
+.app.focus-mode,
+.app[data-focus-mode="true"] {
+  grid-template-columns: 1fr;
+}
+
+.app.focus-mode .sidebar,
+.app[data-focus-mode="true"] .sidebar {
+  display: none;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -405,8 +415,27 @@ button { cursor: pointer; }
 
 .editor-body {
   min-height: 55vh; margin-top: 14px;
-  outline: 0; font-size: 16.5px; line-height: 1.65;
+  outline: 0; font-size: var(--editor-font-size, 16.5px);
+  line-height: 1.65;
   overflow-wrap: anywhere;
+}
+
+.editor-body[data-font-size="small"],
+.editor-body.font-size-small {
+  font-size: 14px;
+}
+
+.editor-body[data-font-size="standard"],
+.editor-body[data-font-size="normal"],
+.editor-body[data-font-size="medium"],
+.editor-body.font-size-standard,
+.editor-body.font-size-normal {
+  font-size: 16.5px;
+}
+
+.editor-body[data-font-size="large"],
+.editor-body.font-size-large {
+  font-size: 19px;
 }
 .editor-body:empty::before { content: attr(data-placeholder); color: var(--text-3); pointer-events: none; }
 .editor-body > :first-child { margin-top: 0; }
