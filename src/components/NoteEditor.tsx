@@ -314,7 +314,7 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
                   <span>#{tag}</span>
                   <button
                     type="button"
-                    className="tag-remove"
+                    className="tag-remove min-w-[24px] min-h-[24px] flex items-center justify-center"
                     aria-label={`${tag} etiketini kaldır`}
                     onClick={() => handleRemoveTag(tag)}
                   >
