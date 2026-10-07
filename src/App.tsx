@@ -135,6 +135,23 @@ function renderHighlightedText(text: string, query: string) {
   return parts;
 }
 
+function renderNoteTags(tags?: string[]) {
+  if (!tags || tags.length === 0) return null;
+  const maxDisplay = 3;
+  const visibleTags = tags.slice(0, maxDisplay);
+  const remaining = tags.length - maxDisplay;
+  return (
+    <span className="note-tags">
+      {visibleTags.map((tag) => (
+        <span key={tag} className="note-tag">#{tag}</span>
+      ))}
+      {remaining > 0 && (
+        <span className="note-tag note-tag-overflow">+{remaining}</span>
+      )}
+    </span>
+  );
+}
+
 function preview(note: Note, query: string = ""): string {
   const fullText = htmlToText(note.html) || "Ek metin yok";
   const trimmed = query.trim();
@@ -720,19 +737,17 @@ export default function App() {
                         {note.deletedAt && <time className="trash-date">{formatListDate(note.deletedAt)}</time>}
                         <span className="note-row-preview">{preview(note)}</span>
                       </span>
-                      {note.tags && note.tags.length > 0 && (
-                        <span className="note-tags">
-                          {note.tags.map((tag) => (
-                            <span key={tag} className="note-tag">#{tag}</span>
-                          ))}
-                        </span>
-                      )}
+                      {renderNoteTags(note.tags)}
                     </button>
                   </li>
                 ))}
               </ul>
               {trashVisible.length === 0 && (
-                <p className="list-empty">{needle ? "Eşleşen silinen not yok" : "Çöp kutusu boş"}</p>
+                <div className="list-empty">
+                  <Trash2 size={24} style={{ opacity: 0.5, margin: "0 auto 6px" }} />
+                  <p style={{ margin: 0, fontWeight: 500 }}>{needle ? "Eşleşen silinen not yok" : "Çöp kutusu boş"}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.7 }}>{needle ? "Farklı bir arama terimi deneyin." : "Silinen notlar burada görünür."}</p>
+                </div>
               )}
             </>
           ) : (
@@ -769,13 +784,7 @@ export default function App() {
                             <time>{formatListDate(note.updatedAt)}</time>
                             <span className="note-row-preview">{renderHighlightedText(preview(note, query), query)}</span>
                           </span>
-                          {note.tags && note.tags.length > 0 && (
-                            <span className="note-tags">
-                              {note.tags.map((tag) => (
-                                <span key={tag} className="note-tag">#{tag}</span>
-                              ))}
-                            </span>
-                          )}
+                          {renderNoteTags(note.tags)}
                         </button>
                       </li>
                     ))}
@@ -783,7 +792,11 @@ export default function App() {
                 </section>
               ))}
               {groups.length === 0 && (
-                <p className="list-empty">{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+                <div className="list-empty">
+                  <StickyNote size={24} style={{ opacity: 0.5, margin: "0 auto 6px" }} />
+                  <p style={{ margin: 0, fontWeight: 500 }}>{needle ? "Eşleşen not yok" : "Henüz not yok"}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.7 }}>{needle ? "Farklı bir arama terimi deneyin." : "Yeni bir not oluşturarak başlayın."}</p>
+                </div>
               )}
             </>
           )}
