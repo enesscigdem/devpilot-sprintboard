@@ -203,6 +203,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [isConfirmTrashOpen, setIsConfirmTrashOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [trashTargetId, setTrashTargetId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const removeToast = (id: string) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
   const showToast = (toast: Omit<ToastNotification, "id">) => {
@@ -872,7 +873,7 @@ export default function App() {
                 if (selected.deletedAt) {
                   handlePermanentDelete(selected.id);
                 } else {
-                  deleteNote(selected.id);
+                  setTrashTargetId(selected.id);
                 }
               }}
               onToast={(msg) => {
@@ -953,6 +954,21 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(trashTargetId)}
+        title="Notu Sil"
+        message="Bu not çöp kutusuna taşınacak."
+        confirmText="Sil"
+        cancelText="Vazgeç"
+        onConfirm={() => {
+          if (trashTargetId) {
+            deleteNote(trashTargetId);
+            setTrashTargetId(null);
+          }
+        }}
+        onClose={() => setTrashTargetId(null)}
+      />
 
       <ConfirmDialog
         isOpen={isConfirmTrashOpen}

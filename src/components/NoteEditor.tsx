@@ -48,7 +48,6 @@ export default function NoteEditor({
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const [active, setActive] = useState<Active>({});
   const [block, setBlock] = useState("P");
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [words, setWords] = useState(() => wordCount(note.html));
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
@@ -85,7 +84,6 @@ export default function NoteEditor({
     if (bodyRef.current) bodyRef.current.innerHTML = note.html;
     if (titleRef.current) titleRef.current.value = note.title;
     setWords(wordCount(note.html));
-    setConfirmDelete(false);
     setTagInput("");
     if (!note.title && !note.html) titleRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -320,28 +318,13 @@ export default function NoteEditor({
           <div className="tool-spacer" />
           <div className="tool-group">
             {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin, note.pinned)}
-            {tool("Notu sil", Trash2, () => setConfirmDelete((v) => !v), confirmDelete)}
+            {tool("Notu sil", Trash2, onDelete)}
           </div>
         </div>
       )}
 
       <div className="editor-scroll">
         <article className="editor-page">
-          {confirmDelete && (
-            <div className="delete-confirm-overlay" role="dialog" aria-modal="true" aria-label="Notu silme onayı">
-              <div className="delete-confirm-box" role="alert">
-                <p className="delete-confirm-text">Bu not çöp kutusuna taşınacak.</p>
-                <div className="delete-confirm-actions">
-                  <button type="button" className="delete-confirm-btn delete-btn-danger" onClick={onDelete}>
-                    Sil
-                  </button>
-                  <button type="button" className="delete-confirm-btn delete-btn-cancel" onClick={() => setConfirmDelete(false)}>
-                    Vazgeç
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
           <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
             {formatFullDate(note.updatedAt)}
           </time>
