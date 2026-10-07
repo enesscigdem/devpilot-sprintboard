@@ -414,13 +414,23 @@ export default function App() {
 
   const needle = query.trim().toLocaleLowerCase("tr");
   const trashNotes = useMemo(() => getTrashNotes(notes), [notes]);
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
+  const tagCounts = useMemo(() => {
+    const counts = new Map<string, number>();
     notes.filter((n) => !n.deletedAt).forEach((n) => {
-      n.tags?.forEach((t) => set.add(t));
+      n.tags?.forEach((t) => {
+        counts.set(t, (counts.get(t) || 0) + 1);
+      });
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
+    return counts;
   }, [notes]);
+
+  const allTags = useMemo(() => {
+    return Array.from(tagCounts.keys()).sort((a, b) => {
+      const countDiff = (tagCounts.get(b) || 0) - (tagCounts.get(a) || 0);
+      if (countDiff !== 0) return countDiff;
+      return a.localeCompare(b, "tr");
+    });
+  }, [tagCounts]);
 
   const visible = useMemo(
     () =>
@@ -576,20 +586,62 @@ export default function App() {
           </label>
         )}
         {currentView === "notes" && allTags.length > 0 && (
-          <div className="tag-filters" aria-label="Etiket filtreleri">
-            <span className="tag-filters-title" style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: "100%", marginBottom: "0.25rem", display: "block" }}>Etiketler</span>
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className={`tag-filter-chip ${selectedTag === tag ? "active" : ""}`}
-                style={selectedTag === tag ? { backgroundColor: "var(--primary, #3b82f6)", color: "#ffffff", fontWeight: 600, borderColor: "var(--primary, #3b82f6)" } : undefined}
-                aria-pressed={selectedTag === tag}
-                onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}
-              >
-                #{tag}
-              </button>
-            ))}
+          <div
+            className="tag-filters"
+            aria-label="Etiket filtreleri"
+            style={{
+              display: "flex",
+              flexWrap: "nowrap",
+              overflowX: "auto",
+              gap: "6px",
+              padding: "4px 10px 8px",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {allTags.map((tag) => {
+              const isSelected = selectedTag === tag;
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`tag-filter-chip ${isSelected ? "active" : ""}`}
+                  style={{
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    whiteSpace: "nowrap",
+                    ...(isSelected
+                      ? {
+                          backgroundColor: "var(--primary, #3b82f6)",
+                          color: "#ffffff",
+                          fontWeight: 600,
+                          borderColor: "var(--primary, #3b82f6)",
+                        }
+                      : {}),
+                  }}
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}
+                >
+                  <span>#{tag}</span>
+                  {isSelected && (
+                    <span
+                      aria-label="Filtreyi kaldır"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        lineHeight: 1,
+                      }}
+                    >
+                      <X size={12} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
         <button
