@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
-  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw, LayoutTemplate,
+  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw, LayoutTemplate, History, Clock,
 } from "lucide-react";
 import { formatFullDate, sanitizeHtml, wordCount, type Note, NOTE_TEMPLATES } from "@/lib/notes";
 
@@ -91,7 +91,9 @@ export default function NoteEditor({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [announce, setAnnounce] = useState("");
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const templateMenuRef = useRef<HTMLDivElement>(null);
+  const historyMenuRef = useRef<HTMLDivElement>(null);
 
   const templates = NOTE_TEMPLATES && NOTE_TEMPLATES.length > 0 ? NOTE_TEMPLATES : FALLBACK_TEMPLATES;
 
@@ -166,15 +168,39 @@ export default function NoteEditor({
   }, [refreshState]);
 
   useEffect(() => {
-    if (!showTemplateMenu) return;
+    if (!showTemplateMenu && !showHistory) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (templateMenuRef.current && !templateMenuRef.current.contains(e.target as Node)) {
         setShowTemplateMenu(false);
       }
+      if (historyMenuRef.current && !historyMenuRef.current.contains(e.target as Node)) {
+        setShowHistory(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showTemplateMenu]);
+  }, [showTemplateMenu, showHistory]);
+
+  const handleRestoreVersion = (version: { title?: string; html: string; tags?: string[]; timestamp?: number; updatedAt?: number }) => {
+    const newTitle = version.title ?? "";
+    const newHtml = sanitizeHtml(version.html ?? "");
+    const newTags = version.tags ?? currentTags;
+
+    if (bodyRef.current) {
+      bodyRef.current.innerHTML = newHtml;
+    }
+    if (titleRef.current) {
+      titleRef.current.value = newTitle;
+    }
+
+    setWords(wordCount(newHtml));
+    onChange({ title: newTitle, html: newHtml, tags: newTags });
+    const versionDate = version.timestamp || version.updatedAt;
+    const dateStr = versionDate ? ` (${formatFullDate(versionDate)})` : "";
+    onToast?.(`Not önceki sürüme geri yüklendi${dateStr}`);
+    setShowHistory(false);
+    bodyRef.current?.focus();
+  };
 
   const handleApplyTemplate = (tpl: { title?: string; html: string; name?: string }) => {
     const newTitle = (!note.title.trim() || note.title === "Başlıksız Not") && tpl.title ? tpl.title : (note.title || tpl.title || "");
@@ -458,6 +484,108 @@ export default function NoteEditor({
                     <span style={{ fontSize: "11px", opacity: 0.7 }}>{tpl.description}</span>
                   </button>
                 ))}
+              </div>
+            )}
+          </div>
+          <div className="tool-group" ref={historyMenuRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="tool"
+              aria-label="Sürüm Geçmişi"
+              title="Sürüm Geçmişi"
+              aria-expanded={showHistory}
+              onClick={() => setShowHistory((v) => !v)}
+            >
+              <History size={17} strokeWidth={2} />
+            </button>
+            {showHistory && (
+              <div
+                className="history-dropdown"
+                role="menu"
+                aria-label="Düzenleme Geçmişi"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: "4px",
+                  background: "var(--color-bg-elevated, #fff)",
+                  border: "1px solid var(--color-border, #e5e7eb)",
+                  borderRadius: "8px",
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                  zIndex: 50,
+                  minWidth: "280px",
+                  maxWidth: "340px",
+                  padding: "8px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderBottom: "1px solid var(--color-border, #e5e7eb)", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 600 }}>Düzenleme Geçmişi</span>
+                  <span style={{ fontSize: "11px", opacity: 0.6 }}>{(note as unknown as { history?: unknown[] }).history?.length || 0} kayıt</span>
+                </div>
+                {(!(note as unknown as { history?: unknown[] }).history || (note as unknown as { history?: unknown[] }).history!.length === 0) ? (
+                  <div style={{ padding: "12px 8px", textAlign: "center", fontSize: "12px", opacity: 0.7 }}>
+                    Henüz kaydedilmiş önceki bir sürüm bulunmuyor.
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: "260px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    {((note as unknown as { history?: Array<{ id?: string; timestamp?: number; updatedAt?: number; title?: string; html: string; tags?: string[] }> }).history || []).map((ver, idx) => {
+                      const verTime = ver.timestamp || ver.updatedAt || Date.now();
+                      const plainText = ver.html.replace(/<[^>]*>/g, " ").trim().slice(0, 60) || "(Boş içerik)";
+                      return (
+                        <div
+                          key={ver.id || idx}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                            padding: "8px",
+                            borderRadius: "6px",
+                            border: "1px solid var(--color-border, #e5e7eb)",
+                            background: "var(--color-bg-subtle, rgba(0,0,0,0.02))",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "11px", opacity: 0.8 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <Clock size={12} />
+                              {formatFullDate(verTime)}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: "12px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {ver.title || "(Başlıksız)"}
+                          </div>
+                          <div style={{ fontSize: "11px", opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {plainText}
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              marginTop: "4px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "4px",
+                              padding: "4px 8px",
+                              fontSize: "11px",
+                              fontWeight: 500,
+                              borderRadius: "4px",
+                              border: "1px solid var(--color-border, #e5e7eb)",
+                              background: "var(--color-bg, #fff)",
+                              cursor: "pointer",
+                              color: "inherit",
+                            }}
+                            onClick={() => handleRestoreVersion(ver)}
+                          >
+                            <RotateCcw size={12} />
+                            <span>Bu Sürüme Dön</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
