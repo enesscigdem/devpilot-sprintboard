@@ -416,6 +416,8 @@ button { cursor: pointer; }
 .editor-body h3 { font-size: 17px; line-height: 1.35; margin: 0.9em 0 0.3em; }
 .editor-body a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .editor-body ul, .editor-body ol { margin: 0 0 0.6em; padding-left: 1.5em; }
+.editor-body ul { list-style-type: disc; }
+.editor-body ol { list-style-type: decimal; }
 .editor-body li { margin: 0.15em 0; }
 .editor-body blockquote {
   margin: 0.8em 0; padding: 2px 0 2px 16px;
