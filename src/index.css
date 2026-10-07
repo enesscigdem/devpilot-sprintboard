@@ -478,6 +478,24 @@ button { cursor: pointer; }
 .editor-body pre code { background: none; padding: 0; }
 .editor-body hr { border: 0; border-top: 1px solid var(--line); margin: 1.4em 0; }
 
+/* Tablolar */
+.editor-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.8em 0;
+}
+.editor-body th,
+.editor-body td {
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  text-align: left;
+  min-width: 40px;
+}
+.editor-body th {
+  background: var(--hover);
+  font-weight: 600;
+}
+
 /* Kontrol listesi */
 .editor-body ul[data-checklist] { list-style: none; padding-left: 0; }
 .editor-body ul[data-checklist] li {
