@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
-  Pin, PinOff, Trash2, Undo2, Redo2, X,
+  Pin, PinOff, Trash2, Undo2, Redo2, RotateCcw, X,
 } from "lucide-react";
 import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes";
 
@@ -9,9 +9,13 @@ type TagSuggestion = { name: string; count?: number } | string;
 
 type Props = {
   note: Note;
-  onChange: (patch: { title?: string; html?: string; tags?: string[] }) => void;
-  onTogglePin: () => void;
-  onDelete: () => void;
+  onChange?: (patch: { title?: string; html?: string; tags?: string[] }) => void;
+  onTogglePin?: () => void;
+  onDelete?: () => void;
+  onRestore?: () => void;
+  onPermanentDelete?: () => void;
+  isTrash?: boolean;
+  readOnly?: boolean;
   allTags?: TagSuggestion[] | Record<string, number>;
   suggestions?: TagSuggestion[] | Record<string, number>;
   onToast?: (message: string) => void;
@@ -28,17 +32,20 @@ const BLOCKS = [
 
 const run = (command: string, value?: string) => document.execCommand(command, false, value);
 
-export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allTags, suggestions, onToast }: Props) {
+export default function NoteEditor({ note, onChange, onTogglePin, onDelete, onRestore, onPermanentDelete, isTrash, readOnly, allTags, suggestions, onToast }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const [active, setActive] = useState<Active>({});
   const [block, setBlock] = useState("P");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmPermanentDelete, setConfirmPermanentDelete] = useState(false);
   const [words, setWords] = useState(() => wordCount(note.html));
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [announce, setAnnounce] = useState("");
+
+  const isReadOnly = Boolean(isTrash || readOnly || (note as any).deleted || (note as any).deletedAt);
 
   const currentTags = useMemo(() => note.tags ?? [], [note.tags]);
 
@@ -112,9 +119,10 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
   }, [refreshState]);
 
   const commit = () => {
+    if (isReadOnly) return;
     const html = sanitizeHtml(bodyRef.current?.innerHTML ?? "");
     setWords(wordCount(html));
-    onChange({ html });
+    onChange?.({ html });
   };
 
   const exec = (command: string, value?: string) => {
@@ -231,16 +239,17 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
     const msg = `"${trimmed}" etiketi eklendi`;
     setAnnounce(msg);
     onToast?.(msg);
-    onChange({ tags: [...currentTags, trimmed] });
+    onChange?.({ tags: [...currentTags, trimmed] });
     setTagInput("");
     setShowSuggestions(false);
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
+    if (isReadOnly) return;
     const msg = `"${tagToRemove}" etiketi kaldırıldı`;
     setAnnounce(msg);
     onToast?.(msg);
-    onChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
+    onChange?.({ tags: currentTags.filter((t) => t !== tagToRemove) });
     setTagError(null);
   };
 
@@ -263,36 +272,61 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
   return (
     <section className="editor" aria-label="Not ayrıntısı">
       <div className="editor-toolbar" role="toolbar" aria-label="Biçimlendirme">
-        <div className="tool-group">
-          {tool("Geri al", Undo2, () => exec("undo"))}
-          {tool("Yinele", Redo2, () => exec("redo"))}
-        </div>
-        <select className="block-select" aria-label="Paragraf biçimi" value={block}
-          onChange={(e) => exec("formatBlock", e.target.value)}>
-          {BLOCKS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
-        </select>
-        <div className="tool-group">
-          {tool("Kalın", Bold, () => exec("bold"), active.bold)}
-          {tool("İtalik", Italic, () => exec("italic"), active.italic)}
-          {tool("Altı çizili", Underline, () => exec("underline"), active.underline)}
-          {tool("Üstü çizili", Strikethrough, () => exec("strikeThrough"), active.strikeThrough)}
-        </div>
-        <div className="tool-group">
-          {tool("Madde işaretli liste", List, () => exec("insertUnorderedList"), active.insertUnorderedList)}
-          {tool("Numaralı liste", ListOrdered, () => exec("insertOrderedList"), active.insertOrderedList)}
-          {tool("Kontrol listesi", ListChecks, toggleChecklist, active.checklist)}
-        </div>
-        <div className="tool-group">
-          {tool("Alıntı", Quote, () => toggleWrap("BLOCKQUOTE"), active.quote)}
-          {tool("Kod bloğu", Code, () => toggleWrap("PRE"), active.code)}
-          {tool("Bağlantı", Link2, addLink, active.link)}
-          {tool("Ayırıcı çizgi", Minus, () => exec("insertHorizontalRule"))}
-        </div>
-        <div className="tool-spacer" />
-        <div className="tool-group">
-          {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin, note.pinned)}
-          {tool("Notu sil", Trash2, () => setConfirmDelete((v) => !v), confirmDelete)}
-        </div>
+        {isReadOnly ? (
+          <div className="tool-group flex items-center gap-2">
+            <button
+              type="button"
+              className="tool flex items-center gap-1.5 px-3 w-auto text-sm font-medium"
+              onClick={() => onRestore?.()}
+              aria-label="Geri Yükle"
+            >
+              <RotateCcw size={16} />
+              <span>Geri Yükle</span>
+            </button>
+            <button
+              type="button"
+              className="tool flex items-center gap-1.5 px-3 w-auto text-sm font-medium text-red-600 dark:text-red-400"
+              onClick={() => setConfirmPermanentDelete(true)}
+              aria-label="Kalıcı Olarak Sil"
+            >
+              <Trash2 size={16} />
+              <span>Kalıcı Olarak Sil</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="tool-group">
+              {tool("Geri al", Undo2, () => exec("undo"))}
+              {tool("Yinele", Redo2, () => exec("redo"))}
+            </div>
+            <select className="block-select" aria-label="Paragraf biçimi" value={block}
+              onChange={(e) => exec("formatBlock", e.target.value)}>
+              {BLOCKS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
+            <div className="tool-group">
+              {tool("Kalın", Bold, () => exec("bold"), active.bold)}
+              {tool("İtalik", Italic, () => exec("italic"), active.italic)}
+              {tool("Altı çizili", Underline, () => exec("underline"), active.underline)}
+              {tool("Üstü çizili", Strikethrough, () => exec("strikeThrough"), active.strikeThrough)}
+            </div>
+            <div className="tool-group">
+              {tool("Madde işaretli liste", List, () => exec("insertUnorderedList"), active.insertUnorderedList)}
+              {tool("Numaralı liste", ListOrdered, () => exec("insertOrderedList"), active.insertOrderedList)}
+              {tool("Kontrol listesi", ListChecks, toggleChecklist, active.checklist)}
+            </div>
+            <div className="tool-group">
+              {tool("Alıntı", Quote, () => toggleWrap("BLOCKQUOTE"), active.quote)}
+              {tool("Kod bloğu", Code, () => toggleWrap("PRE"), active.code)}
+              {tool("Bağlantı", Link2, addLink, active.link)}
+              {tool("Ayırıcı çizgi", Minus, () => exec("insertHorizontalRule"))}
+            </div>
+            <div className="tool-spacer" />
+            <div className="tool-group">
+              {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin || (() => {}), note.pinned)}
+              {tool("Notu sil", Trash2, () => setConfirmDelete((v) => !v), confirmDelete)}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="editor-scroll">
@@ -312,12 +346,40 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
               </div>
             </div>
           )}
+          {confirmPermanentDelete && (
+            <div className="delete-confirm-overlay" role="dialog" aria-modal="true" aria-label="Kalıcı olarak silme onayı">
+              <div className="delete-confirm-box" role="alert">
+                <p className="delete-confirm-text">Bu işlem geri alınamaz.</p>
+                <div className="delete-confirm-actions">
+                  <button
+                    type="button"
+                    className="delete-confirm-btn delete-btn-danger"
+                    onClick={() => {
+                      setConfirmPermanentDelete(false);
+                      if (onPermanentDelete) onPermanentDelete();
+                      else if (onDelete) onDelete();
+                    }}
+                  >
+                    Kalıcı Olarak Sil
+                  </button>
+                  <button
+                    type="button"
+                    className="delete-confirm-btn delete-btn-cancel"
+                    onClick={() => setConfirmPermanentDelete(false)}
+                  >
+                    Vazgeç
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
             {formatFullDate(note.updatedAt)}
           </time>
-          <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder="Başlık"
+          <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder={isReadOnly ? "" : "Başlık"}
+            readOnly={isReadOnly}
             defaultValue={note.title}
-            onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
+            onChange={(e) => !isReadOnly && onChange?.({ title: e.target.value.replace(/\n/g, " ") })}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
           <div className="editor-tags-container">
             <div className="editor-tags" aria-label="Etiketler">
@@ -327,80 +389,84 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
               {currentTags.map((tag) => (
                 <span key={tag} className="tag-chip">
                   <span>#{tag}</span>
-                  <button
-                    type="button"
-                    className="tag-remove min-w-[24px] min-h-[24px] flex items-center justify-center"
-                    aria-label={`${tag} etiketini kaldır`}
-                    onClick={() => handleRemoveTag(tag)}
-                  >
-                    <X size={12} />
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      className="tag-remove min-w-[24px] min-h-[24px] flex items-center justify-center"
+                      aria-label={`${tag} etiketini kaldır`}
+                      onClick={() => handleRemoveTag(tag)}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
                 </span>
               ))}
-              <div className="tag-input-wrapper">
-                <input
-                  type="text"
-                  className="tag-input"
-                  aria-label="Etiket ekle"
-                  placeholder="Etiket ekle..."
-                  value={tagInput}
-                  onFocus={() => setShowSuggestions(true)}
-                  onChange={(e) => {
-                    setTagInput(e.target.value);
-                    if (tagError) setTagError(null);
-                    setShowSuggestions(true);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
-                      e.preventDefault();
+              {!isReadOnly && (
+                <div className="tag-input-wrapper">
+                  <input
+                    type="text"
+                    className="tag-input"
+                    aria-label="Etiket ekle"
+                    placeholder="Etiket ekle..."
+                    value={tagInput}
+                    onFocus={() => setShowSuggestions(true)}
+                    onChange={(e) => {
+                      setTagInput(e.target.value);
+                      if (tagError) setTagError(null);
+                      setShowSuggestions(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === ",") {
+                        e.preventDefault();
+                        if (tagInput.trim()) {
+                          handleAddTag(tagInput);
+                        }
+                      } else if (e.key === "Backspace" && !tagInput && currentTags.length > 0) {
+                        handleRemoveTag(currentTags[currentTags.length - 1]);
+                      } else if (e.key === "Escape") {
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onBlur={() => {
                       if (tagInput.trim()) {
                         handleAddTag(tagInput);
                       }
-                    } else if (e.key === "Backspace" && !tagInput && currentTags.length > 0) {
-                      handleRemoveTag(currentTags[currentTags.length - 1]);
-                    } else if (e.key === "Escape") {
-                      setShowSuggestions(false);
-                    }
-                  }}
-                  onBlur={() => {
-                    if (tagInput.trim()) {
-                      handleAddTag(tagInput);
-                    }
-                    setTimeout(() => setShowSuggestions(false), 200);
-                  }}
-                />
-                {showSuggestions && filteredSuggestions.length > 0 && (
-                  <ul className="tag-suggestions" role="listbox" aria-label="Etiket önerileri">
-                    {filteredSuggestions.map((s) => (
-                      <li
-                        key={s.name}
-                        role="option"
-                        aria-selected={false}
-                        className="tag-suggestion-item"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleAddTag(s.name);
-                        }}
-                      >
-                        <span>#{s.name}</span>
-                        {typeof s.count === "number" && (
-                          <span className="tag-count">({s.count})</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                  />
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <ul className="tag-suggestions" role="listbox" aria-label="Etiket önerileri">
+                      {filteredSuggestions.map((s) => (
+                        <li
+                          key={s.name}
+                          role="option"
+                          aria-selected={false}
+                          className="tag-suggestion-item"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddTag(s.name);
+                          }}
+                        >
+                          <span>#{s.name}</span>
+                          {typeof s.count === "number" && (
+                            <span className="tag-count">({s.count})</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
-            {tagError && (
+            {!isReadOnly && tagError && (
               <div className="tag-error" role="alert">
                 {tagError}
               </div>
             )}
           </div>
-          <div ref={bodyRef} className="editor-body" contentEditable suppressContentEditableWarning role="textbox"
-            aria-multiline="true" aria-label="Not içeriği" data-placeholder="Yazmaya başla…"
-            onInput={commit} onClick={onBodyClick} onKeyDown={onBodyKeyDown} onPaste={onPaste} />
+          <div ref={bodyRef} className="editor-body" contentEditable={!isReadOnly} suppressContentEditableWarning role={isReadOnly ? undefined : "textbox"}
+            aria-multiline={!isReadOnly ? "true" : undefined} aria-label="Not içeriği" data-placeholder={isReadOnly ? "" : "Yazmaya başla…"}
+            onInput={!isReadOnly ? commit : undefined} onClick={onBodyClick} onKeyDown={!isReadOnly ? onBodyKeyDown : undefined} onPaste={!isReadOnly ? onPaste : undefined} />
         </article>
       </div>
 
