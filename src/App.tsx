@@ -688,6 +688,11 @@ export default function App() {
           <div
             className="tag-filters"
             aria-label="Etiket filtreleri"
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
             style={{
               display: "flex",
               flexWrap: "nowrap",
