@@ -18,6 +18,11 @@ type Props = {
   allTags?: TagSuggestion[] | Record<string, number>;
   suggestions?: TagSuggestion[] | Record<string, number>;
   onToast?: (message: string) => void;
+  notes?: Note[];
+  allNotes?: Note[];
+  onSelectNote?: (id: string) => void;
+  onNavigateNote?: (id: string) => void;
+  backlinks?: Note[];
 };
 
 type Active = Record<string, boolean>;
@@ -42,6 +47,11 @@ export default function NoteEditor({
   allTags,
   suggestions,
   onToast,
+  notes,
+  allNotes: propAllNotes,
+  onSelectNote,
+  onNavigateNote,
+  backlinks: propBacklinks,
 }: Props) {
   const isTrash = propIsTrash ?? Boolean(note.deletedAt);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -53,6 +63,15 @@ export default function NoteEditor({
   const [tagError, setTagError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [announce, setAnnounce] = useState("");
+
+  const availableNotes = useMemo(() => {
+    const list = propAllNotes || notes || [];
+    return list.filter((n) => !n.deletedAt && n.id !== note.id);
+  }, [propAllNotes, notes, note.id]);
+
+  const [mentionQuery, setMentionQuery] = useState<{ query: string; trigger: "@" | "[["; range: Range } | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [mentionCoords, setMentionCoords] = useState<{ top: number; left: number } | null>(null);
 
   const currentTags = useMemo(() => note.tags ?? [], [note.tags]);
 
@@ -182,8 +201,23 @@ export default function NoteEditor({
     refreshState();
   };
 
+  const handleNoteNavigation = useCallback((targetId: string) => {
+    if (onSelectNote) onSelectNote(targetId);
+    else if (onNavigateNote) onNavigateNote(targetId);
+  }, [onSelectNote, onNavigateNote]);
+
   const onBodyClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
+    const noteLink = target.closest("a[data-note-id], a[href^='#note-']");
+    if (noteLink) {
+      event.preventDefault();
+      const targetId = noteLink.getAttribute("data-note-id") || noteLink.getAttribute("href")?.replace(/^#note-/, "");
+      if (targetId) {
+        handleNoteNavigation(targetId);
+        return;
+      }
+    }
+
     if (target.tagName === "LI" && target.parentElement?.hasAttribute("data-checklist")) {
       const rect = target.getBoundingClientRect();
       if (event.clientX - rect.left < 30) {
@@ -194,10 +228,125 @@ export default function NoteEditor({
       }
     }
     const link = target.closest("a");
-    if (link && (event.metaKey || event.ctrlKey)) window.open(link.getAttribute("href") ?? "", "_blank", "noopener");
+    if (link && !link.hasAttribute("data-note-id") && !link.getAttribute("href")?.startsWith("#note-")) {
+      if (event.metaKey || event.ctrlKey) window.open(link.getAttribute("href") ?? "", "_blank", "noopener");
+    }
   };
 
+  const checkMentionTrigger = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || !sel.isCollapsed || !sel.anchorNode || !bodyRef.current?.contains(sel.anchorNode)) {
+      setMentionQuery(null);
+      return;
+    }
+
+    const anchorNode = sel.anchorNode;
+    if (anchorNode.nodeType !== Node.TEXT_NODE) {
+      setMentionQuery(null);
+      return;
+    }
+
+    const text = anchorNode.textContent ?? "";
+    const offset = sel.anchorOffset;
+    const textBefore = text.slice(0, offset);
+
+    const atMatch = textBefore.match(/(?:^|\s)@([^@\s\[\]]*)$/);
+    const bracketMatch = textBefore.match(/\[\[([^\[\]]*)$/);
+
+    if (bracketMatch) {
+      const query = bracketMatch[1];
+      const startIndex = offset - query.length - 2;
+      const range = document.createRange();
+      range.setStart(anchorNode, startIndex);
+      range.setEnd(anchorNode, offset);
+
+      const rect = range.getBoundingClientRect();
+      setMentionCoords({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+      setMentionQuery({ query, trigger: "[[", range });
+      setMentionIndex(0);
+      return;
+    }
+
+    if (atMatch) {
+      const query = atMatch[1];
+      const atOffset = textBefore.lastIndexOf("@");
+      const range = document.createRange();
+      range.setStart(anchorNode, atOffset);
+      range.setEnd(anchorNode, offset);
+
+      const rect = range.getBoundingClientRect();
+      setMentionCoords({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+      setMentionQuery({ query, trigger: "@", range });
+      setMentionIndex(0);
+      return;
+    }
+
+    setMentionQuery(null);
+  }, []);
+
+  const filteredNoteSuggestions = useMemo(() => {
+    if (!mentionQuery) return [];
+    const q = mentionQuery.query.toLowerCase().trim();
+    if (!q) return availableNotes.slice(0, 8);
+    return availableNotes
+      .filter((n) => (n.title || "Başlıksız").toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [availableNotes, mentionQuery]);
+
+  const insertNoteLink = useCallback((targetNote: Note) => {
+    if (!mentionQuery) return;
+    const sel = window.getSelection();
+    if (!sel) return;
+
+    const { range, trigger } = mentionQuery;
+    range.deleteContents();
+
+    const linkEl = document.createElement("a");
+    linkEl.setAttribute("href", `#note-${targetNote.id}`);
+    linkEl.setAttribute("data-note-id", targetNote.id);
+    linkEl.setAttribute("class", "internal-note-link");
+    linkEl.textContent = trigger === "[[" ? `[[${targetNote.title || "Başlıksız"}]]` : `@${targetNote.title || "Başlıksız"}`;
+
+    range.insertNode(linkEl);
+
+    // Add a space after the link
+    const spaceNode = document.createTextNode("\u00A0");
+    if (linkEl.parentNode) {
+      linkEl.parentNode.insertBefore(spaceNode, linkEl.nextSibling);
+    }
+
+    const newRange = document.createRange();
+    newRange.setStartAfter(spaceNode);
+    newRange.setEndAfter(spaceNode);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+
+    setMentionQuery(null);
+    commit();
+    refreshState();
+  }, [mentionQuery, refreshState]);
+
   const onBodyKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (mentionQuery && filteredNoteSuggestions.length > 0) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setMentionIndex((prev) => (prev + 1) % filteredNoteSuggestions.length);
+        return;
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setMentionIndex((prev) => (prev - 1 + filteredNoteSuggestions.length) % filteredNoteSuggestions.length);
+        return;
+      } else if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        insertNoteLink(filteredNoteSuggestions[mentionIndex] || filteredNoteSuggestions[0]);
+        return;
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        setMentionQuery(null);
+        return;
+      }
+    }
+
     if (event.key === "Enter" && !event.shiftKey) {
       const anchor = window.getSelection()?.anchorNode;
       const el = anchor && (anchor.nodeType === 1 ? (anchor as Element) : anchor.parentElement);
@@ -209,7 +358,6 @@ export default function NoteEditor({
         }, 0);
       }
     }
-
   };
 
   const MAX_TAG_LENGTH = 30;
@@ -441,7 +589,54 @@ export default function NoteEditor({
           </div>
           <div ref={bodyRef} className="editor-body" contentEditable={!isTrash} suppressContentEditableWarning role="textbox"
             aria-multiline="true" aria-label="Not içeriği" data-placeholder={isTrash ? "" : "Yazmaya başla…"}
-            onInput={isTrash ? undefined : commit} onClick={isTrash ? undefined : onBodyClick} onKeyDown={isTrash ? undefined : onBodyKeyDown} onPaste={isTrash ? undefined : onPaste} />
+            onInput={isTrash ? undefined : () => { commit(); checkMentionTrigger(); }} onClick={isTrash ? undefined : onBodyClick} onKeyUp={isTrash ? undefined : checkMentionTrigger} onKeyDown={isTrash ? undefined : onBodyKeyDown} onPaste={isTrash ? undefined : onPaste} />
+          {mentionQuery && mentionCoords && filteredNoteSuggestions.length > 0 && (
+            <div
+              className="note-mention-dropdown"
+              style={{
+                position: "fixed",
+                top: `${mentionCoords.top}px`,
+                left: `${mentionCoords.left}px`,
+                zIndex: 1000,
+              }}
+              role="listbox"
+              aria-label="Not önerileri"
+            >
+              {filteredNoteSuggestions.map((targetNote, idx) => (
+                <button
+                  key={targetNote.id}
+                  type="button"
+                  role="option"
+                  aria-selected={idx === mentionIndex}
+                  className={`note-mention-item ${idx === mentionIndex ? "active" : ""}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    insertNoteLink(targetNote);
+                  }}
+                >
+                  <span className="note-mention-title">{targetNote.title || "Başlıksız Not"}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {propBacklinks && propBacklinks.length > 0 && (
+            <div className="editor-backlinks">
+              <h4 className="backlinks-heading">Bu nota bağlantı verenler ({propBacklinks.length})</h4>
+              <div className="backlinks-list">
+                {propBacklinks.map((bl) => (
+                  <button
+                    key={bl.id}
+                    type="button"
+                    className="backlink-item"
+                    onClick={() => handleNoteNavigation(bl.id)}
+                  >
+                    <span className="backlink-title">{bl.title || "Başlıksız Not"}</span>
+                    <span className="backlink-date">{formatFullDate(bl.updatedAt)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </article>
       </div>
 

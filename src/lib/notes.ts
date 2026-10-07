@@ -46,11 +46,18 @@ export function sanitizeHtml(input: string): string {
       }
       const copy = document.createElement(el.tagName);
       if (el.tagName === "A") {
-        const href = el.getAttribute("href") ?? "";
-        if (/^(https?:|mailto:)/i.test(href)) {
-          copy.setAttribute("href", href);
-          copy.setAttribute("target", "_blank");
-          copy.setAttribute("rel", "noopener noreferrer");
+        const noteId = el.getAttribute("data-note-id");
+        if (noteId) {
+          copy.setAttribute("data-note-id", noteId);
+          copy.setAttribute("href", `#note-${noteId}`);
+          if (el.className) copy.setAttribute("class", el.className);
+        } else {
+          const href = el.getAttribute("href") ?? "";
+          if (/^(https?:|mailto:)/i.test(href)) {
+            copy.setAttribute("href", href);
+            copy.setAttribute("target", "_blank");
+            copy.setAttribute("rel", "noopener noreferrer");
+          }
         }
       }
       if (el.tagName === "UL" && el.hasAttribute("data-checklist")) copy.setAttribute("data-checklist", "");
@@ -171,6 +178,26 @@ export function saveNotes(notes: Note[]) {
 }
 
 export const getActiveNotes = (notes: Note[]): Note[] => notes.filter((n) => !n.deletedAt);
+
+/** HTML içeriğindeki bağlantılı not kimliklerini (data-note-id) çıkarır. */
+export function extractLinkedNoteIds(html: string): string[] {
+  if (typeof DOMParser === "undefined" || !html) return [];
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+  const links = Array.from(doc.querySelectorAll("a[data-note-id]"));
+  const ids = new Set<string>();
+  for (const link of links) {
+    const id = link.getAttribute("data-note-id");
+    if (id) ids.add(id);
+  }
+  return Array.from(ids);
+}
+
+/** Belirtilen nota referans veren (bağlantı içeren) diğer aktif notları bulur. */
+export function getBacklinks(notes: Note[], targetNoteId: string): Note[] {
+  if (!targetNoteId) return [];
+  const active = getActiveNotes(notes);
+  return active.filter((n) => n.id !== targetNoteId && extractLinkedNoteIds(n.html).includes(targetNoteId));
+}
 
 export const getTrashNotes = (notes: Note[]): Note[] =>
   notes.filter((n) => typeof n.deletedAt === "number").sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0));

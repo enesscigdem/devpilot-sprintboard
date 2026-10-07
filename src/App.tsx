@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDo
 import NoteEditor from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
-  createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
+  createNote, emptyTrash, formatListDate, formatDueDate, getBacklinks, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
 
 interface ToastNotification {
@@ -567,6 +567,25 @@ export default function App() {
     : (notes.find((n) => n.id === selectedId && (currentView === "trash" ? Boolean(n.deletedAt) : !n.deletedAt)) ?? null);
   const realCount = notes.filter((n) => !n.deletedAt && !isEmpty(n)).length;
 
+  const backlinks = useMemo(() => {
+    if (!selected) return [];
+    return getBacklinks(notes, selected.id);
+  }, [notes, selected]);
+
+  const handleNavigateNote = (id: string) => {
+    const target = notes.find((n) => n.id === id);
+    if (!target) {
+      showToast({ type: "error", title: "Bağlantılı not bulunamadı" });
+      return;
+    }
+    if (target.deletedAt) {
+      setCurrentView("trash");
+    } else {
+      setCurrentView("notes");
+    }
+    select(id);
+  };
+
   return (
     <div className="app" data-pane={mobilePane}>
       <aside className="sidebar" aria-label="Notlar">
@@ -894,6 +913,10 @@ export default function App() {
             <NoteEditor
               key={selected.id}
               note={selected}
+              notes={notes}
+              backlinks={backlinks}
+              onSelectNote={handleNavigateNote}
+              onNavigateNote={handleNavigateNote}
               isTrash={Boolean(selected.deletedAt)}
               onRestore={() => handleRestore(selected.id)}
               onPermanentDelete={() => handlePermanentDelete(selected.id)}
