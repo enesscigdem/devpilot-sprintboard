@@ -330,10 +330,11 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
                   <button
                     type="button"
                     className="tag-remove min-w-[24px] min-h-[24px] flex items-center justify-center"
+                    style={{ width: 24, height: 24 }}
                     aria-label={`${tag} etiketini kaldır`}
                     onClick={() => handleRemoveTag(tag)}
                   >
-                    <X size={12} />
+                    <X size={14} />
                   </button>
                 </span>
               ))}
@@ -351,7 +352,7 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
                     setShowSuggestions(true);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
+                    if (e.key === "Enter" || e.key === "," || e.key === " ") {
                       e.preventDefault();
                       if (tagInput.trim()) {
                         handleAddTag(tagInput);
@@ -360,6 +361,29 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
                       handleRemoveTag(currentTags[currentTags.length - 1]);
                     } else if (e.key === "Escape") {
                       setShowSuggestions(false);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const text = e.clipboardData.getData("text");
+                    if (/[\s,]/.test(text.trim())) {
+                      e.preventDefault();
+                      const parts = text.split(/[\s,]+/).map((p) => p.trim().replace(/^#+/, "")).filter(Boolean);
+                      if (parts.length > 0) {
+                        const nextTags = [...currentTags];
+                        for (const part of parts) {
+                          if (part.length <= MAX_TAG_LENGTH && !nextTags.includes(part)) {
+                            nextTags.push(part);
+                          }
+                        }
+                        if (nextTags.length > currentTags.length) {
+                          onChange({ tags: nextTags });
+                          const msg = `${nextTags.length - currentTags.length} etiket eklendi`;
+                          setAnnounce(msg);
+                          onToast?.(msg);
+                        }
+                        setTagInput("");
+                        setShowSuggestions(false);
+                      }
                     }
                   }}
                   onBlur={() => {
