@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
-  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw,
+  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw, Folder as FolderIcon,
 } from "lucide-react";
-import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes";
+import { formatFullDate, sanitizeHtml, wordCount, type Note, type Folder } from "@/lib/notes";
 
 type TagSuggestion = { name: string; count?: number } | string;
 
 type Props = {
   note: Note;
-  onChange: (patch: { title?: string; html?: string; tags?: string[] }) => void;
+  folders?: Folder[];
+  onChange: (patch: { title?: string; html?: string; tags?: string[]; folderId?: string | null }) => void;
   onTogglePin?: () => void;
   onDelete?: () => void;
   onRestore?: () => void;
@@ -33,6 +34,7 @@ const run = (command: string, value?: string) => document.execCommand(command, f
 
 export default function NoteEditor({
   note,
+  folders = [],
   onChange,
   onTogglePin = () => {},
   onDelete = () => {},
@@ -316,6 +318,29 @@ export default function NoteEditor({
             {tool("Ayırıcı çizgi", Minus, () => exec("insertHorizontalRule"))}
           </div>
           <div className="tool-spacer" />
+          {!isTrash && folders && (
+            <div className="folder-select-container flex items-center gap-1 text-sm mr-2">
+              <FolderIcon size={16} className="text-muted-foreground" aria-hidden="true" />
+              <select
+                className="folder-select bg-transparent text-xs py-1 px-2 border rounded border-border"
+                aria-label="Klasör seçimi"
+                value={note.folderId ?? ""}
+                onChange={(e) => {
+                  const nextFolderId = e.target.value || null;
+                  onChange({ folderId: nextFolderId });
+                  const targetFolder = folders.find((f) => f.id === nextFolderId);
+                  onToast?.(targetFolder ? `"${targetFolder.name}" klasörüne taşındı` : "Klasörden çıkarıldı");
+                }}
+              >
+                <option value="">Klasörsüz (Genel)</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="tool-group">
             {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin, note.pinned)}
             {tool("Notu sil", Trash2, onDelete)}

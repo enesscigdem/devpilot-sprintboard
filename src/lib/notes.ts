@@ -1,3 +1,9 @@
+export type Folder = {
+  id: string;
+  name: string;
+  createdAt: number;
+};
+
 export type Note = {
   id: string;
   title: string;
@@ -11,9 +17,12 @@ export type Note = {
   /** ISO 8601 tarih dizesi (YYYY-MM-DD) veya undefined. */
   dueDate?: string;
   tags: string[];
+  /** Bağlı olduğu klasör kimliği veya tanımsız (Kök/Tüm Notlar). */
+  folderId?: string;
 };
 
 export const NOTES_KEY = "sprintboard.notes.v2";
+export const FOLDERS_KEY = "sprintboard.folders.v1";
 export const NOTE_SORT_KEY = "sprintboard.notes.sort";
 /** Eski görev panosu kayıtları; ilk açılışta notlara dönüştürülür. */
 export const LEGACY_TASKS_KEY = "sprintboard.tasks.v1";
@@ -81,8 +90,21 @@ export const newId = () =>
     ? crypto.randomUUID()
     : `not-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-export const createNote = (now = Date.now()): Note => ({
-  id: newId(), title: "", html: "", pinned: false, createdAt: now, updatedAt: now, tags: [],
+export const createNote = (now = Date.now(), folderId?: string): Note => ({
+  id: newId(),
+  title: "",
+  html: "",
+  pinned: false,
+  createdAt: now,
+  updatedAt: now,
+  tags: [],
+  folderId,
+});
+
+export const createFolder = (name: string, now = Date.now()): Folder => ({
+  id: newId(),
+  name: name.trim() || "Yeni Klasör",
+  createdAt: now,
 });
 
 const readJson = (key: string): unknown => {
@@ -117,7 +139,8 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
   const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
   const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
-  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags };
+  const folderId = typeof r.folderId === "string" && r.folderId.trim() ? r.folderId.trim() : undefined;
+  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags, folderId };
 }
 
 /** Eski görev kaydını (başlık, açıklama, durum) zengin bir nota çevirir. */
@@ -165,6 +188,33 @@ export function loadNotes(): Note[] {
 export function saveNotes(notes: Note[]) {
   try {
     window.localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+  } catch {
+    // Kota dolu veya depolama kapalıysa uygulama çalışmaya devam eder.
+  }
+}
+
+export function loadFolders(): Folder[] {
+  if (typeof window === "undefined") return [];
+  const stored = readJson(FOLDERS_KEY);
+  if (!stored) return [];
+  const seen = new Set<string>();
+  return asList(stored)
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const r = item as Record<string, unknown>;
+      const id = typeof r.id === "string" ? r.id.trim() : "";
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      if (!id || !name || seen.has(id)) return null;
+      seen.add(id);
+      const createdAt = typeof r.createdAt === "number" && Number.isFinite(r.createdAt) ? r.createdAt : Date.now();
+      return { id, name, createdAt };
+    })
+    .filter((f): f is Folder => f !== null);
+}
+
+export function saveFolders(folders: Folder[]) {
+  try {
+    window.localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
   } catch {
     // Kota dolu veya depolama kapalıysa uygulama çalışmaya devam eder.
   }
@@ -443,6 +493,7 @@ export function importNotesFromJson(
     const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
     const dueDate = typeof r.dueDate === "string" && r.dueDate.trim() ? r.dueDate.trim() : undefined;
     const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0) : [];
+    const folderId = typeof r.folderId === "string" && r.folderId.trim() ? r.folderId.trim() : undefined;
 
     importedNotes.push({
       id,
@@ -454,6 +505,7 @@ export function importNotesFromJson(
       deletedAt,
       dueDate,
       tags,
+      folderId,
     });
   }
 

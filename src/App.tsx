@@ -1,10 +1,10 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Folder as FolderIcon, FolderPlus, Info, Moon, Pencil, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
-  createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
+  createFolder, createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadFolders, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveFolders, saveNotes, sortNotes, NOTE_SORT_KEY, type Folder, type Note, type NoteSortOption,
 } from "./lib/notes";
 
 interface ToastNotification {
@@ -210,6 +210,13 @@ export default function App() {
       : "light";
   });
   const [notes, setNotes] = useState<Note[]>(loadNotes);
+  const [folders, setFolders] = useState<Folder[]>(loadFolders);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
   const [draft, setDraft] = useState<Note | null>(null);
   const [currentView, setCurrentView] = useState<"notes" | "trash">("notes");
   const [query, setQuery] = useState("");
@@ -265,6 +272,14 @@ export default function App() {
   }, [notes]);
 
   useEffect(() => {
+    try {
+      saveFolders(folders);
+    } catch {
+      // depolama hatası yoksayılır
+    }
+  }, [folders]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isEditable = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
@@ -306,11 +321,48 @@ export default function App() {
 
   const addNote = () => {
     setCurrentView("notes");
-    const note = createNote();
+    const note = createNote(Date.now(), selectedFolderId ?? undefined);
     setDraft(note);
     setSelectedId(note.id);
     setQuery("");
     setMobilePane("editor");
+  };
+
+  const handleCreateFolder = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const name = newFolderName.trim();
+    if (!name) {
+      showToast({ type: "warning", title: "Lütfen bir klasör adı girin." });
+      return;
+    }
+    const folder = createFolder(name);
+    setFolders((prev) => [...prev, folder]);
+    setNewFolderName("");
+    setIsCreatingFolder(false);
+    setSelectedFolderId(folder.id);
+    showToast({ type: "success", title: `"${folder.name}" klasörü oluşturuldu` });
+  };
+
+  const handleRenameFolder = (id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      showToast({ type: "warning", title: "Klasör adı boş olamaz." });
+      return;
+    }
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: trimmed } : f)));
+    setEditingFolderId(null);
+    setEditingFolderName("");
+    showToast({ type: "success", title: "Klasör yeniden adlandırıldı" });
+  };
+
+  const handleDeleteFolder = (folder: Folder) => {
+    setFolders((prev) => prev.filter((f) => f.id !== folder.id));
+    setNotes((prev) => prev.map((n) => (n.folderId === folder.id ? { ...n, folderId: undefined } : n)));
+    if (selectedFolderId === folder.id) {
+      setSelectedFolderId(null);
+    }
+    setFolderToDelete(null);
+    showToast({ type: "info", title: `"${folder.name}" klasörü silindi` });
   };
 
   const handleRestore = (id: string) => {
@@ -509,12 +561,13 @@ export default function App() {
       notes.filter(
         (n) =>
           !n.deletedAt &&
+          (!selectedFolderId || n.folderId === selectedFolderId) &&
           (!selectedTag || n.tags?.includes(selectedTag)) &&
           (!needle ||
             n.title.toLocaleLowerCase("tr").includes(needle) ||
             htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
       ),
-    [notes, needle, selectedTag],
+    [notes, needle, selectedTag, selectedFolderId],
   );
   const trashVisible = useMemo(
     () =>
@@ -698,6 +751,163 @@ export default function App() {
             </button>
           )}
         </div>
+        {currentView === "notes" && (
+          <div className="sidebar-folders" style={{ padding: "6px 10px", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-2)" }}>Klasörler</span>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Yeni Klasör Ekle"
+                title="Yeni Klasör"
+                style={{ width: "24px", height: "24px", padding: 0 }}
+                onClick={() => setIsCreatingFolder((prev) => !prev)}
+              >
+                <FolderPlus size={14} />
+              </button>
+            </div>
+            {isCreatingFolder && (
+              <form onSubmit={handleCreateFolder} style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Klasör adı..."
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  style={{ flex: 1, fontSize: "12px", padding: "3px 6px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--hover)", color: "var(--text)" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setIsCreatingFolder(false);
+                      setNewFolderName("");
+                    }
+                  }}
+                />
+                <button type="submit" className="primary-button" style={{ fontSize: "11px", padding: "2px 8px", height: "auto" }}>Ekle</button>
+                <button type="button" className="icon-button" onClick={() => setIsCreatingFolder(false)} style={{ width: "24px", height: "24px", padding: 0 }}><X size={13} /></button>
+              </form>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <button
+                type="button"
+                className={`folder-item ${selectedFolderId === null ? "active" : ""}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: selectedFolderId === null ? 600 : 400,
+                  background: selectedFolderId === null ? "var(--hover)" : "transparent",
+                  color: "var(--text)",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  width: "100%",
+                }}
+                onClick={() => setSelectedFolderId(null)}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <StickyNote size={14} style={{ opacity: 0.7 }} />
+                  <span>Tüm Notlar</span>
+                </span>
+                <span style={{ fontSize: "11px", opacity: 0.6 }}>{notes.filter((n) => !n.deletedAt).length}</span>
+              </button>
+              {folders.map((folder) => {
+                const count = notes.filter((n) => !n.deletedAt && n.folderId === folder.id).length;
+                const isEditing = editingFolderId === folder.id;
+                const isSelected = selectedFolderId === folder.id;
+                if (isEditing) {
+                  return (
+                    <div key={folder.id} style={{ display: "flex", gap: "4px", padding: "2px 0" }}>
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editingFolderName}
+                        onChange={(e) => setEditingFolderName(e.target.value)}
+                        style={{ flex: 1, fontSize: "12px", padding: "2px 6px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--hover)", color: "var(--text)" }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRenameFolder(folder.id, editingFolderName);
+                          if (e.key === "Escape") setEditingFolderId(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ fontSize: "11px", padding: "2px 6px", height: "auto" }}
+                        onClick={() => handleRenameFolder(folder.id, editingFolderName)}
+                      >
+                        Kaydet
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        style={{ width: "22px", height: "22px", padding: 0 }}
+                        onClick={() => setEditingFolderId(null)}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={folder.id}
+                    className={`folder-item-row group ${isSelected ? "active" : ""}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "4px 8px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: isSelected ? 600 : 400,
+                      background: isSelected ? "var(--hover)" : "transparent",
+                      color: "var(--text)",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => setSelectedFolderId(folder.id)}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <FolderIcon size={14} style={{ opacity: 0.7, flexShrink: 0 }} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{folder.name}</span>
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "2px", flexShrink: 0 }}>
+                      <span style={{ fontSize: "11px", opacity: 0.6, marginRight: "4px" }}>{count}</span>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Yeniden adlandır: ${folder.name}`}
+                        title="Yeniden adlandır"
+                        style={{ width: "20px", height: "20px", padding: 0 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingFolderId(folder.id);
+                          setEditingFolderName(folder.name);
+                        }}
+                      >
+                        <Pencil size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Sil: ${folder.name}`}
+                        title="Klasörü sil"
+                        style={{ width: "20px", height: "20px", padding: 0 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFolderToDelete(folder);
+                        }}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {currentView === "notes" && (
           <label style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px" }}>
             <span style={{ fontSize: "12px" }}>Sırala:</span>
@@ -894,11 +1104,14 @@ export default function App() {
             <NoteEditor
               key={selected.id}
               note={selected}
+              folders={folders}
               isTrash={Boolean(selected.deletedAt)}
               onRestore={() => handleRestore(selected.id)}
               onPermanentDelete={() => handlePermanentDelete(selected.id)}
               onChange={(patch) => {
-                if (!selected.deletedAt) patchNote(selected.id, patch);
+                if (!selected.deletedAt) {
+                  patchNote(selected.id, { ...patch, folderId: patch.folderId ?? undefined });
+                }
               }}
               onTogglePin={() => {
                 if (!selected.deletedAt) togglePin(selected.id);
@@ -988,6 +1201,20 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(folderToDelete)}
+        title="Klasörü Sil"
+        message={folderToDelete ? `"${folderToDelete.name}" klasörünü silmek istediğinize emin misiniz? Klasördeki notlar silinmez, klasörsüz olarak saklanır.` : ""}
+        confirmText="Klasörü Sil"
+        cancelText="Vazgeç"
+        onConfirm={() => {
+          if (folderToDelete) {
+            handleDeleteFolder(folderToDelete);
+          }
+        }}
+        onClose={() => setFolderToDelete(null)}
+      />
 
       <ConfirmDialog
         isOpen={Boolean(trashTargetId)}
