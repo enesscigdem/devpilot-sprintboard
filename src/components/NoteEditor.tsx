@@ -211,6 +211,11 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
       return;
     }
     if (/[\s,]/.test(trimmed)) {
+      const parts = trimmed.split(/[\s,]+/).filter(Boolean);
+      if (parts.length > 1) {
+        handleAddMultipleTags(parts);
+        return;
+      }
       setTagError("Etiket boşluk veya virgül içeremez.");
       return;
     }
@@ -223,6 +228,31 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
     onChange({ tags: [...currentTags, trimmed] });
     setTagInput("");
     setShowSuggestions(false);
+  };
+
+  const handleAddMultipleTags = (rawTags: string[]) => {
+    const toAdd: string[] = [];
+    let error: string | null = null;
+    for (const raw of rawTags) {
+      const trimmed = raw.trim().replace(/^#+/, "").trim();
+      if (!trimmed) continue;
+      if (trimmed.length > MAX_TAG_LENGTH) {
+        error = `Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`;
+        continue;
+      }
+      if (!currentTags.includes(trimmed) && !toAdd.includes(trimmed)) {
+        toAdd.push(trimmed);
+      }
+    }
+    if (toAdd.length > 0) {
+      setTagError(error);
+      setAnnounce(`${toAdd.map((t) => `"${t}"`).join(", ")} etiketi eklendi`);
+      onChange({ tags: [...currentTags, ...toAdd] });
+      setTagInput("");
+      setShowSuggestions(false);
+    } else if (error) {
+      setTagError(error);
+    }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -307,24 +337,24 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
             onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
           <div className="editor-tags-container">
-            <div className="editor-tags" aria-label="Etiketler">
+            <div className="editor-tags flex flex-wrap items-center gap-1.5" aria-label="Etiketler">
               <div className="sr-only" aria-live="polite" aria-atomic="true">
                 {announce}
               </div>
               {currentTags.map((tag) => (
-                <span key={tag} className="tag-chip">
+                <span key={tag} className="tag-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
                   <span>#{tag}</span>
                   <button
                     type="button"
-                    className="tag-remove min-w-[24px] min-h-[24px] flex items-center justify-center"
+                    className="tag-remove w-6 h-6 min-w-[24px] min-h-[24px] flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"
                     aria-label={`${tag} etiketini kaldır`}
                     onClick={() => handleRemoveTag(tag)}
                   >
-                    <X size={12} />
+                    <X size={14} />
                   </button>
                 </span>
               ))}
-              <div className="tag-input-wrapper">
+              <div className="tag-input-wrapper flex-1 min-w-[120px]">
                 <input
                   type="text"
                   className="tag-input"
@@ -337,8 +367,18 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
                     if (tagError) setTagError(null);
                     setShowSuggestions(true);
                   }}
+                  onPaste={(e) => {
+                    const pasteText = e.clipboardData.getData("text");
+                    if (pasteText && /[\s,]/.test(pasteText.trim())) {
+                      e.preventDefault();
+                      const parts = pasteText.split(/[\s,]+/).map((p) => p.trim()).filter(Boolean);
+                      if (parts.length > 0) {
+                        handleAddMultipleTags(parts);
+                      }
+                    }
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
+                    if (e.key === "Enter" || e.key === "," || e.key === " ") {
                       e.preventDefault();
                       if (tagInput.trim()) {
                         handleAddTag(tagInput);
