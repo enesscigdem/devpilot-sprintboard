@@ -1,3 +1,9 @@
+export type NoteHistoryEntry = {
+  timestamp: number;
+  title: string;
+  html: string;
+};
+
 export type Note = {
   id: string;
   title: string;
@@ -11,6 +17,8 @@ export type Note = {
   /** ISO 8601 tarih dizesi (YYYY-MM-DD) veya undefined. */
   dueDate?: string;
   tags: string[];
+  /** Son düzenleme geçmişi kayıtları. */
+  history?: NoteHistoryEntry[];
 };
 
 export const NOTES_KEY = "sprintboard.notes.v2";
@@ -207,7 +215,16 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
   const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
   const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
-  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags };
+  const rawHistory = Array.isArray(r.history) ? r.history : [];
+  const history: NoteHistoryEntry[] = rawHistory
+    .filter((h): h is Record<string, unknown> => !!h && typeof h === "object")
+    .map((h) => ({
+      timestamp: typeof h.timestamp === "number" ? h.timestamp : now,
+      title: typeof h.title === "string" ? h.title : "",
+      html: typeof h.html === "string" ? sanitizeHtml(h.html) : "",
+    }))
+    .filter((h) => h.title || h.html);
+  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags, history: history.length > 0 ? history : undefined };
 }
 
 /** Eski görev kaydını (başlık, açıklama, durum) zengin bir nota çevirir. */
@@ -544,6 +561,15 @@ export function importNotesFromJson(
     const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
     const dueDate = typeof r.dueDate === "string" && r.dueDate.trim() ? r.dueDate.trim() : undefined;
     const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0) : [];
+    const rawHistory = Array.isArray(r.history) ? r.history : [];
+    const history: NoteHistoryEntry[] = rawHistory
+      .filter((h): h is Record<string, unknown> => !!h && typeof h === "object")
+      .map((h) => ({
+        timestamp: typeof h.timestamp === "number" ? h.timestamp : now,
+        title: typeof h.title === "string" ? h.title : "",
+        html: typeof h.html === "string" ? sanitizeHtml(h.html) : "",
+      }))
+      .filter((h) => h.title || h.html);
 
     importedNotes.push({
       id,
@@ -555,6 +581,7 @@ export function importNotesFromJson(
       deletedAt,
       dueDate,
       tags,
+      history: history.length > 0 ? history : undefined,
     });
   }
 
@@ -677,4 +704,30 @@ export function filterNotes(notes: Note[], query: string | ParsedSearchQuery): N
     return notes;
   }
   return notes.filter((note) => matchNote(note, parsed));
+}
+
+export const MAX_NOTE_HISTORY_ENTRIES = 15;
+
+/** Mevcut not sürümünü geçmiş listesine ekler (içerik değiştiyse ve ardışık yinelenme yoksa). */
+export function addHistoryVersion(
+  currentHistory: NoteHistoryEntry[] | undefined,
+  prevTitle: string,
+  prevHtml: string,
+  now = Date.now(),
+  maxEntries = MAX_NOTE_HISTORY_ENTRIES
+): NoteHistoryEntry[] {
+  const history = currentHistory ? [...currentHistory] : [];
+  const last = history[0];
+  if (last && last.title === prevTitle && last.html === prevHtml) {
+    return history;
+  }
+  if (!prevTitle && !prevHtml) {
+    return history;
+  }
+  const newEntry: NoteHistoryEntry = {
+    timestamp: now,
+    title: prevTitle,
+    html: prevHtml,
+  };
+  return [newEntry, ...history].slice(0, maxEntries);
 }

@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDo
 import NoteEditor from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
-  createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, matchNote, noteToMarkdown, notesToJson, parseSearchQuery, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
+  addHistoryVersion, createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, matchNote, noteToMarkdown, notesToJson, parseSearchQuery, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
 
 interface ToastNotification {
@@ -238,6 +238,12 @@ export default function App() {
   const [isConfirmTrashOpen, setIsConfirmTrashOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [trashTargetId, setTrashTargetId] = useState<string | null>(null);
+  const [showBackupBanner, setShowBackupBanner] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("backup_banner_dismissed") !== "true";
+    }
+    return true;
+  });
   const searchRef = useRef<HTMLInputElement>(null);
   const removeToast = (id: string) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
   const showToast = (toast: Omit<ToastNotification, "id">) => {
@@ -351,7 +357,20 @@ export default function App() {
       }
       return;
     }
-    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)));
+    setNotes((prev) =>
+      prev.map((n) => {
+        if (n.id === id) {
+          const contentChanged =
+            (patch.title !== undefined && patch.title !== n.title) ||
+            (patch.html !== undefined && patch.html !== n.html);
+          const history = contentChanged
+            ? addHistoryVersion(n.history, n.title, n.html)
+            : n.history;
+          return { ...n, ...patch, history, updatedAt: Date.now() };
+        }
+        return n;
+      })
+    );
   };
 
   const togglePin = (id: string) => {
@@ -716,6 +735,57 @@ export default function App() {
             </button>
           )}
         </div>
+        {currentView === "notes" && showBackupBanner && (
+          <div
+            role="region"
+            aria-label="Yedekleme uyarısı"
+            className="backup-banner"
+            style={{
+              margin: "6px 10px",
+              padding: "8px 10px",
+              borderRadius: "8px",
+              background: "var(--hover, rgba(0, 0, 0, 0.04))",
+              border: "1px solid var(--border, #e2e8f0)",
+              fontSize: "12px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 600, color: "var(--text)" }}>
+                <AlertTriangle size={14} className="text-amber-500 shrink-0" />
+                <span>Yerel Depolama Uyarısı</span>
+              </div>
+              <button
+                type="button"
+                aria-label="Uyarıyı kapat"
+                className="icon-button"
+                style={{ width: "18px", height: "18px", padding: 0 }}
+                onClick={() => {
+                  setShowBackupBanner(false);
+                  localStorage.setItem("backup_banner_dismissed", "true");
+                }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <p style={{ margin: 0, color: "var(--text-2)", fontSize: "11px", lineHeight: "1.4" }}>
+              Notlarınız yalnızca bu tarayıcıda saklanır. Veri kaybını önlemek için düzenli JSON veya Markdown yedeği alın.
+            </p>
+            <div style={{ display: "flex", gap: "6px", marginTop: "2px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ fontSize: "11px", padding: "3px 8px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                onClick={exportAllJson}
+              >
+                <Download size={12} />
+                <span>JSON Yedeği İndir</span>
+              </button>
+            </div>
+          </div>
+        )}
         {currentView === "notes" && (
           <label style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px" }}>
             <span style={{ fontSize: "12px" }}>Sırala:</span>
