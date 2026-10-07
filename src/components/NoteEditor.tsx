@@ -270,7 +270,7 @@ export default function NoteEditor({
   return (
     <section className="editor" aria-label="Not ayrıntısı">
       {isTrash ? (
-        <div className="editor-toolbar" role="toolbar" aria-label="Çöp kutusu eylemleri">
+        <div className="editor-toolbar overflow-x-auto" role="toolbar" aria-label="Çöp kutusu eylemleri">
           <div className="tool-group">
             <button type="button" className="tool-text-btn" onClick={onRestore} title="Geri Yükle">
               <RotateCcw size={16} />
@@ -283,7 +283,7 @@ export default function NoteEditor({
           </div>
         </div>
       ) : (
-        <div className="editor-toolbar" role="toolbar" aria-label="Biçimlendirme">
+        <div className="editor-toolbar overflow-x-auto" role="toolbar" aria-label="Biçimlendirme">
           <div className="tool-group">
             {tool("Geri al", Undo2, () => exec("undo"))}
             {tool("Yinele", Redo2, () => exec("redo"))}
@@ -319,8 +319,8 @@ export default function NoteEditor({
 
       <div className="editor-scroll">
         <article className="editor-page">
-          <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
-            {formatFullDate(note.updatedAt)}
+          <time className="editor-date font-medium text-xs text-muted-foreground" dateTime={new Date(note.updatedAt).toISOString()}>
+            Son düzenleme: {formatFullDate(note.updatedAt)}
           </time>
           <textarea ref={titleRef} className="editor-title" rows={1} aria-label="Not başlığı" placeholder="Başlık"
             defaultValue={note.title}
