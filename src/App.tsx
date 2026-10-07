@@ -557,7 +557,12 @@ export default function App() {
         {currentView === "notes" && (
           <label style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px" }}>
             <span style={{ fontSize: "12px" }}>Sırala:</span>
-            <select aria-label="Notları sırala" value={sortBy} onChange={(e) => setSortBy(e.target.value as NoteSortOption)}>
+            <select
+              aria-label="Notları sırala"
+              className="appearance-none h-[34px] rounded-[9px] border-0 bg-[var(--hover)] px-2.5 text-sm text-[var(--text)] cursor-pointer outline-none focus:ring-2 focus:ring-[var(--focus)]"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as NoteSortOption)}
+            >
               <option value="updatedAt">Son güncellenen</option>
               <option value="createdAt">Oluşturulma tarihi</option>
               <option value="title">Başlık</option>
