@@ -339,13 +339,12 @@ export default function NoteEditor({
                 {announce}
               </div>
               {currentTags.map((tag) => (
-                <span key={tag} className="tag-chip">
+                <span key={tag} className="tag-chip inline-flex items-center">
                   <span>#{tag}</span>
                   {!isTrash && (
                     <button
                       type="button"
-                      className="tag-remove min-w-[24px] min-h-[24px] flex items-center justify-center"
-                      style={{ width: 24, height: 24 }}
+                      className="tag-remove inline-flex items-center justify-center"
                       aria-label={`${tag} etiketini kaldır`}
                       onClick={() => handleRemoveTag(tag)}
                     >
