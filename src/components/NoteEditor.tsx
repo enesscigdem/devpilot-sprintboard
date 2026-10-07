@@ -17,7 +17,7 @@ type Props = {
   isTrash?: boolean;
   allTags?: TagSuggestion[] | Record<string, number>;
   suggestions?: TagSuggestion[] | Record<string, number>;
-  onToast?: (message: string) => void;
+  onToast?: (message: string, action?: { label: string; onAction: () => void }) => void;
 };
 
 type Active = Record<string, boolean>;
@@ -334,7 +334,14 @@ export default function NoteEditor({
     setTagError(null);
     const msg = `"${trimmed}" etiketi eklendi`;
     setAnnounce(msg);
-    onToast?.(msg);
+    const prevTags = [...currentTags];
+    onToast?.(msg, {
+      label: "Geri Al",
+      onAction: () => {
+        onChange({ tags: prevTags });
+        onToast?.(`"${trimmed}" etiketi kaldırıldı`);
+      },
+    });
     onChange({ tags: [...currentTags, trimmed] });
     setTagInput("");
     setShowSuggestions(false);
@@ -343,7 +350,14 @@ export default function NoteEditor({
   const handleRemoveTag = (tagToRemove: string) => {
     const msg = `"${tagToRemove}" etiketi kaldırıldı`;
     setAnnounce(msg);
-    onToast?.(msg);
+    const prevTags = [...currentTags];
+    onToast?.(msg, {
+      label: "Geri Al",
+      onAction: () => {
+        onChange({ tags: prevTags });
+        onToast?.(`"${tagToRemove}" etiketi geri eklendi`);
+      },
+    });
     onChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
     setTagError(null);
   };

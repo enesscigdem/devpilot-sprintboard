@@ -349,10 +349,26 @@ export default function App() {
   };
 
   const handleRestore = (id: string) => {
+    const target = notes.find((n) => n.id === id);
+    const originalDeletedAt = target?.deletedAt || Date.now();
     setNotes((prev) => restoreNote(prev, id));
     setCurrentView("notes");
     setSelectedId(id);
-    showToast({ type: "success", title: "Not geri yüklendi" });
+    showToast({
+      type: "success",
+      title: "Not geri yüklendi",
+      duration: 4000,
+      action: {
+        label: "Geri Al",
+        onClick: () => {
+          setNotes((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, deletedAt: originalDeletedAt } : n))
+          );
+          setSelectedId(id);
+          showToast({ type: "info", title: "Geri yükleme geri alındı" });
+        },
+      },
+    });
   };
 
   const handlePermanentDelete = (id: string) => {
@@ -1042,11 +1058,12 @@ export default function App() {
                   setTrashTargetId(selected.id);
                 }
               }}
-              onToast={(msg) => {
+              onToast={(msg, action) => {
                 const isWarning = msg.includes("geçerli") || msg.includes("uzun") || msg.includes("içeremez") || msg.includes("zaten") || msg.includes("hata");
                 showToast({
                   type: isWarning ? "warning" : "success",
                   title: msg,
+                  action: action ? { label: action.label, onClick: action.onAction } : undefined,
                 });
               }}
             />

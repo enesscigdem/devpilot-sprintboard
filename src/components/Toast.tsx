@@ -168,7 +168,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
     <div
       aria-live="polite"
       aria-label="Bildirimler"
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 pointer-events-auto"
+      className="fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 pointer-events-auto"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
