@@ -463,3 +463,117 @@ export function importNotesFromJson(
     notes: [...importedNotes, ...currentNotes],
   };
 }
+
+export type ParsedSearchQuery = {
+  raw: string;
+  generalTerms: string[];
+  tags: string[];
+  titleTerms: string[];
+  contentTerms: string[];
+  highlightTerms: string[];
+};
+
+export function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Arama çubuğu dizesini etiket (#), başlık (title:), içerik (content:) ve genel terimlere ayrıştırır. */
+export function parseSearchQuery(query: string): ParsedSearchQuery {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return { raw: "", generalTerms: [], tags: [], titleTerms: [], contentTerms: [], highlightTerms: [] };
+  }
+
+  const tokens = trimmed.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+  const generalTerms: string[] = [];
+  const tags: string[] = [];
+  const titleTerms: string[] = [];
+  const contentTerms: string[] = [];
+  const highlightTerms: string[] = [];
+
+  for (const rawToken of tokens) {
+    const token = rawToken.replace(/^"|"$/g, "").trim();
+    if (!token) continue;
+
+    if (token.startsWith("#") && token.length > 1) {
+      const tag = token.slice(1).toLowerCase();
+      tags.push(tag);
+      highlightTerms.push(token.slice(1));
+    } else if (/^(?:tag|etiket):/i.test(token)) {
+      const tag = token.replace(/^(?:tag|etiket):/i, "").trim().toLowerCase();
+      if (tag) {
+        tags.push(tag);
+        highlightTerms.push(tag);
+      }
+    } else if (/^(?:title|başlık|baslik):/i.test(token)) {
+      const val = token.replace(/^(?:title|başlık|baslik):/i, "").trim();
+      if (val) {
+        titleTerms.push(val.toLowerCase());
+        highlightTerms.push(val);
+      }
+    } else if (/^(?:content|içerik|icerik):/i.test(token)) {
+      const val = token.replace(/^(?:content|içerik|icerik):/i, "").trim();
+      if (val) {
+        contentTerms.push(val.toLowerCase());
+        highlightTerms.push(val);
+      }
+    } else {
+      generalTerms.push(token.toLowerCase());
+      highlightTerms.push(token);
+    }
+  }
+
+  return {
+    raw: trimmed,
+    generalTerms,
+    tags,
+    titleTerms,
+    contentTerms,
+    highlightTerms,
+  };
+}
+
+/** Verilen notun ayrıştırılmış arama sorgusu ile eşleşip eşleşmediğini kontrol eder. */
+export function matchNote(note: Note, query: string | ParsedSearchQuery): boolean {
+  const parsed = typeof query === "string" ? parseSearchQuery(query) : query;
+  if (!parsed.raw && parsed.generalTerms.length === 0 && parsed.tags.length === 0 && parsed.titleTerms.length === 0 && parsed.contentTerms.length === 0) {
+    return true;
+  }
+
+  const titleLower = (note.title || "").toLowerCase();
+  const bodyText = htmlToText(note.html || "").toLowerCase();
+  const noteTagsLower = (note.tags || []).map((t) => t.toLowerCase());
+
+  for (const tag of parsed.tags) {
+    const hasTag = noteTagsLower.some((t) => t.includes(tag));
+    if (!hasTag) return false;
+  }
+
+  for (const term of parsed.titleTerms) {
+    if (!titleLower.includes(term)) return false;
+  }
+
+  for (const term of parsed.contentTerms) {
+    if (!bodyText.includes(term)) return false;
+  }
+
+  for (const term of parsed.generalTerms) {
+    const matchesTitle = titleLower.includes(term);
+    const matchesBody = bodyText.includes(term);
+    const matchesTag = noteTagsLower.some((t) => t.includes(term));
+    if (!matchesTitle && !matchesBody && !matchesTag) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/** Notları ayrıştırılmış sorguya göre filtreler. */
+export function filterNotes(notes: Note[], query: string | ParsedSearchQuery): Note[] {
+  const parsed = typeof query === "string" ? parseSearchQuery(query) : query;
+  if (!parsed.raw && parsed.generalTerms.length === 0 && parsed.tags.length === 0 && parsed.titleTerms.length === 0 && parsed.contentTerms.length === 0) {
+    return notes;
+  }
+  return notes.filter((note) => matchNote(note, parsed));
+}
