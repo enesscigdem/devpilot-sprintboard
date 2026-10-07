@@ -25,7 +25,7 @@ interface ToastItemProps {
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
-  const duration = toast.duration ?? 5000;
+  const duration = toast.duration ?? 3500;
   const remainingTimeRef = useRef(duration);
   const lastStartTimeRef = useRef(Date.now());
 
@@ -168,7 +168,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
     <div
       aria-live="polite"
       aria-label="Bildirimler"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 pointer-events-auto"
+      className="fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 pointer-events-auto"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
