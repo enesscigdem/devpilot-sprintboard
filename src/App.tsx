@@ -599,9 +599,9 @@ export default function App() {
           <div style={{ padding: "0 10px 8px", display: "flex", justifyContent: "flex-end" }}>
             <button
               type="button"
-              className="danger-button"
+              className="danger-button min-h-[36px]"
               onClick={handleEmptyTrash}
-              style={{ fontSize: "12px", padding: "4px 10px" }}
+              style={{ fontSize: "12px", padding: "4px 10px", minHeight: "36px" }}
             >
               <Trash2 size={13} />
               Çöp kutusunu boşalt
