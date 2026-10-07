@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDo
 import NoteEditor from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
-  createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
+  createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, matchNote, noteToMarkdown, notesToJson, parseSearchQuery, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
 
 interface ToastNotification {
@@ -132,36 +132,32 @@ function normalizeText(text: string): string {
 }
 
 function renderHighlightedText(text: string, query: string) {
-  const trimmed = query.trim();
-  if (!trimmed || !text) return text;
+  if (!text || !query.trim()) return text;
+  const parsed = parseSearchQuery(query);
+  const terms = parsed.highlightTerms.filter((t) => t.length > 0);
+  if (terms.length === 0) return text;
 
-  const normQuery = normalizeText(trimmed);
-  const normText = normalizeText(text);
-  const parts: (string | JSX.Element)[] = [];
-  let lastIndex = 0;
-  let index = normText.indexOf(normQuery, lastIndex);
+  const sortedTerms = [...new Set(terms.map((t) => t.trim()))].filter(Boolean).sort((a, b) => b.length - a.length);
+  if (sortedTerms.length === 0) return text;
 
-  if (index === -1) return text;
+  const escaped = sortedTerms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const regex = new RegExp(`(${escaped})`, "gi");
 
-  while (index !== -1) {
-    if (index > lastIndex) {
-      parts.push(text.slice(lastIndex, index));
+  const parts = text.split(regex);
+  if (parts.length <= 1) return text;
+
+  return parts.map((part, i) => {
+    if (!part) return null;
+    const isMatch = sortedTerms.some((t) => t.toLocaleLowerCase("tr") === part.toLocaleLowerCase("tr"));
+    if (isMatch) {
+      return (
+        <mark key={i} className="search-highlight">
+          {part}
+        </mark>
+      );
     }
-    const matchEnd = index + normQuery.length;
-    parts.push(
-      <mark key={index} className="search-highlight">
-        {text.slice(index, matchEnd)}
-      </mark>
-    );
-    lastIndex = matchEnd;
-    index = normText.indexOf(normQuery, lastIndex);
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
+    return part;
+  });
 }
 
 function renderNoteTags(tags?: string[]) {
@@ -183,13 +179,22 @@ function renderNoteTags(tags?: string[]) {
 
 function preview(note: Note, query: string = ""): string {
   const fullText = htmlToText(note.html) || "Ek metin yok";
-  const trimmed = query.trim();
-  if (!trimmed || fullText === "Ek metin yok") {
+  if (!query.trim() || fullText === "Ek metin yok") {
+    return fullText;
+  }
+  const parsed = parseSearchQuery(query);
+  const terms = parsed.highlightTerms.filter((t) => t.length > 0);
+  if (terms.length === 0) {
     return fullText;
   }
   const normText = normalizeText(fullText);
-  const normQuery = normalizeText(trimmed);
-  const matchIndex = normText.indexOf(normQuery);
+  let matchIndex = -1;
+  for (const term of terms) {
+    const idx = normText.indexOf(normalizeText(term));
+    if (idx !== -1 && (matchIndex === -1 || idx < matchIndex)) {
+      matchIndex = idx;
+    }
+  }
   if (matchIndex === -1) return fullText;
 
   const snippetLength = 120;
@@ -484,6 +489,7 @@ export default function App() {
     }
   };
 
+  const parsedQuery = useMemo(() => parseSearchQuery(query), [query]);
   const needle = query.trim().toLocaleLowerCase("tr");
   const trashNotes = useMemo(() => getTrashNotes(notes), [notes]);
   const tagCounts = useMemo(() => {
@@ -510,21 +516,16 @@ export default function App() {
         (n) =>
           !n.deletedAt &&
           (!selectedTag || n.tags?.includes(selectedTag)) &&
-          (!needle ||
-            n.title.toLocaleLowerCase("tr").includes(needle) ||
-            htmlToText(n.html).toLocaleLowerCase("tr").includes(needle)),
+          matchNote(n, parsedQuery),
       ),
-    [notes, needle, selectedTag],
+    [notes, parsedQuery, selectedTag],
   );
   const trashVisible = useMemo(
     () =>
       trashNotes.filter(
-        (n) =>
-          !needle ||
-          n.title.toLocaleLowerCase("tr").includes(needle) ||
-          htmlToText(n.html).toLocaleLowerCase("tr").includes(needle),
+        (n) => matchNote(n, parsedQuery),
       ),
-    [trashNotes, needle],
+    [trashNotes, parsedQuery],
   );
 
   const activeListItems = currentView === "trash" ? trashVisible : visible;
@@ -562,9 +563,17 @@ export default function App() {
     }
   };
   const groups = useMemo(() => groupNotes(visible).map((group) => ({ ...group, notes: sortNotes(group.notes, sortBy) })), [visible, sortBy]);
-  const selected = (draft && draft.id === selectedId)
-    ? draft
-    : (notes.find((n) => n.id === selectedId && (currentView === "trash" ? Boolean(n.deletedAt) : !n.deletedAt)) ?? null);
+  const selected = useMemo(() => {
+    if (draft && draft.id === selectedId) {
+      if (!query.trim() || matchNote(draft, parsedQuery)) {
+        return draft;
+      }
+      return null;
+    }
+    if (!selectedId) return null;
+    const found = activeListItems.find((n) => n.id === selectedId);
+    return found ?? null;
+  }, [draft, selectedId, query, parsedQuery, activeListItems]);
   const realCount = notes.filter((n) => !n.deletedAt && !isEmpty(n)).length;
 
   return (
@@ -924,8 +933,17 @@ export default function App() {
             {currentView === "trash" ? (
               <>
                 <Trash2 size={44} strokeWidth={1.4} />
-                <h2>Çöp Kutusu</h2>
-                <p>Silinen notları görüntülemek veya geri yüklemek için soldan bir not seçin.</p>
+                <h2>{query.trim() ? "Eşleşen silinen not yok" : "Çöp Kutusu"}</h2>
+                <p>{query.trim() ? "Aramanızla eşleşen silinmiş bir not bulunamadı." : "Silinen notları görüntülemek veya geri yüklemek için soldan bir not seçin."}</p>
+              </>
+            ) : query.trim() && visible.length === 0 ? (
+              <>
+                <Search size={44} strokeWidth={1.4} />
+                <h2>Sonuç bulunamadı</h2>
+                <p>"{query}" ile eşleşen not bulunamadı. Farklı bir arama terimi veya etiket deneyin.</p>
+                <button type="button" className="primary-button" onClick={() => setQuery("")}>
+                  Aramayı Temizle
+                </button>
               </>
             ) : (
               <>
