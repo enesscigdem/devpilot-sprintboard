@@ -806,6 +806,10 @@ export default function App() {
                 <div className="shortcut-keys"><kbd>⌘ / Ctrl</kbd><kbd>K</kbd></div>
               </div>
               <div className="shortcut-row">
+                <span className="shortcut-label">Tüm notlar</span>
+                <div className="shortcut-keys"><kbd>G</kbd><kbd>A</kbd></div>
+              </div>
+              <div className="shortcut-row">
                 <span className="shortcut-label">Kısayol yardımı</span>
                 <div className="shortcut-keys"><kbd>?</kbd></div>
               </div>
