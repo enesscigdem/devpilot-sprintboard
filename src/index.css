@@ -964,3 +964,23 @@ mark,
   align-items: center;
   gap: 8px;
 }
+
+/* Tag chip remove button */
+.tag-remove-button,
+[data-action="remove-tag"],
+.tag-chip-remove {
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tag-remove-button:focus-visible,
+[data-action="remove-tag"]:focus-visible,
+.tag-chip-remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
