@@ -110,7 +110,6 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   if (!id || seen.has(id)) return null;
   const title = typeof r.title === "string" ? r.title.trim() : "";
   const html = typeof r.html === "string" ? sanitizeHtml(r.html) : "";
-  if (!title && !html) return null;
   seen.add(id);
   const num = (v: unknown, fb: number) => (typeof v === "number" && Number.isFinite(v) ? v : fb);
   const now = Date.now();
@@ -188,6 +187,14 @@ export const permanentlyDeleteNote = (notes: Note[], id: string): Note[] =>
 export const emptyTrash = (notes: Note[]): Note[] =>
   notes.filter((n) => !n.deletedAt);
 
+export function getNoteTitle(note: { title?: string; html?: string }, fallback = "Başlıksız not"): string {
+  const title = (note.title ?? "").trim();
+  if (title) return title;
+  const body = htmlToText(note.html ?? "");
+  if (body) return body;
+  return fallback;
+}
+
 /** Notları seçilen ölçüte göre sıralar; sabitlenmiş notlar her zaman başta kalır. */
 export function sortNotes(notes: Note[], sortBy: NoteSortOption = "updatedAt"): Note[] {
   const pinned = notes.filter((n) => n.pinned);
@@ -198,8 +205,8 @@ export function sortNotes(notes: Note[], sortBy: NoteSortOption = "updatedAt"): 
       return b.createdAt - a.createdAt;
     }
     if (sortBy === "title") {
-      const titleA = (a.title || htmlToText(a.html) || "").trim();
-      const titleB = (b.title || htmlToText(b.html) || "").trim();
+      const titleA = getNoteTitle(a);
+      const titleB = getNoteTitle(b);
       return titleA.localeCompare(titleB, "tr-TR", { sensitivity: "base" });
     }
     return b.updatedAt - a.updatedAt;

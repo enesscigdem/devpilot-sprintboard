@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import {
-  createNote, emptyTrash, formatListDate, formatDueDate, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
+  createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, noteToMarkdown, notesToJson, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
 } from "./lib/notes";
 
 interface ToastNotification {
@@ -615,7 +615,7 @@ export default function App() {
                     >
                       <span className="note-row-title">
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-                          {note.title.trim() || "Yeni Not"}
+                          {getNoteTitle(note)}
                         </span>
                       </span>
                       <span className="note-row-meta">
@@ -650,7 +650,7 @@ export default function App() {
                           <span className="note-row-title">
                             {note.pinned && <Pin size={12} className="pin-mark" aria-label="Sabitlenmiş" />}
                             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-                              {renderHighlightedText(note.title.trim() || "Yeni Not", query)}
+                              {renderHighlightedText(getNoteTitle(note), query)}
                             </span>
                             {note.dueDate && (
                               <span className="due-date-badge" style={{
