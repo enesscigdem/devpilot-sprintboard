@@ -97,7 +97,7 @@ export function ConfirmDialog({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+              className="min-h-[32px] inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl transition-colors shadow-sm"
             >
               {cancelText}
             </button>
@@ -107,12 +107,12 @@ export function ConfirmDialog({
                 onConfirm();
                 onClose();
               }}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-xl shadow-sm transition-colors ${
+              className={`min-h-[32px] inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-xl shadow-sm transition-colors ${
                 variant === 'danger'
-                  ? 'bg-red-600 hover:bg-red-700 active:bg-red-800'
+                  ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 focus:ring-2 focus:ring-red-500/20'
                   : variant === 'warning'
-                  ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800'
-                  : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800'
+                  ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 focus:ring-2 focus:ring-amber-500/20'
+                  : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 focus:ring-2 focus:ring-indigo-500/20'
               }`}
             >
               {confirmText}
