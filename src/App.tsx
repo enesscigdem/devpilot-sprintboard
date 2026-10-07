@@ -561,11 +561,13 @@ export default function App() {
         )}
         {currentView === "notes" && allTags.length > 0 && (
           <div className="tag-filters" aria-label="Etiket filtreleri">
+            <span className="tag-filters-title" style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: "100%", marginBottom: "0.25rem", display: "block" }}>Etiketler</span>
             {allTags.map((tag) => (
               <button
                 key={tag}
                 type="button"
                 className={`tag-filter-chip ${selectedTag === tag ? "active" : ""}`}
+                style={selectedTag === tag ? { backgroundColor: "var(--primary, #3b82f6)", color: "#ffffff", fontWeight: 600, borderColor: "var(--primary, #3b82f6)" } : undefined}
                 aria-pressed={selectedTag === tag}
                 onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}
               >
