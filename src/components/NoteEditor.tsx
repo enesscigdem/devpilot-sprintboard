@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
+  Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus, Table,
   Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw, LayoutTemplate, History, Clock,
 } from "lucide-react";
 import { formatFullDate, sanitizeHtml, wordCount, type Note, NOTE_TEMPLATES } from "@/lib/notes";
@@ -279,6 +279,14 @@ export default function NoteEditor({
     refreshState();
   };
 
+  const insertTable = () => {
+    bodyRef.current?.focus();
+    const tableHtml = `<table><thead><tr><th>Başlık 1</th><th>Başlık 2</th><th>Başlık 3</th></tr></thead><tbody><tr><td>Hücre 1</td><td>Hücre 2</td><td>Hücre 3</td></tr><tr><td>Hücre 4</td><td>Hücre 5</td><td>Hücre 6</td></tr></tbody></table><p></p>`;
+    run("insertHTML", tableHtml);
+    commit();
+    refreshState();
+  };
+
   const onBodyClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.tagName === "LI" && target.parentElement?.hasAttribute("data-checklist")) {
@@ -295,6 +303,64 @@ export default function NoteEditor({
   };
 
   const onBodyKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Tab") {
+      const sel = window.getSelection();
+      const anchor = sel?.anchorNode;
+      const el = anchor && (anchor.nodeType === 1 ? (anchor as HTMLElement) : anchor.parentElement);
+      const cell = el?.closest("td, th") as HTMLTableCellElement | null;
+      if (cell) {
+        event.preventDefault();
+        const table = cell.closest("table");
+        if (table) {
+          const cells = Array.from(table.querySelectorAll("th, td")) as HTMLElement[];
+          const currentIndex = cells.indexOf(cell);
+          if (event.shiftKey) {
+            if (currentIndex > 0) {
+              const prevCell = cells[currentIndex - 1];
+              prevCell.focus();
+              const range = document.createRange();
+              range.selectNodeContents(prevCell);
+              range.collapse(false);
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+            }
+          } else {
+            if (currentIndex < cells.length - 1) {
+              const nextCell = cells[currentIndex + 1];
+              nextCell.focus();
+              const range = document.createRange();
+              range.selectNodeContents(nextCell);
+              range.collapse(false);
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+            } else {
+              const row = cell.closest("tr");
+              const colCount = row?.children.length || 3;
+              const tbody = table.querySelector("tbody") || table;
+              const newRow = document.createElement("tr");
+              for (let i = 0; i < colCount; i++) {
+                const newTd = document.createElement("td");
+                newTd.innerHTML = "<br>";
+                newRow.appendChild(newTd);
+              }
+              tbody.appendChild(newRow);
+              commit();
+              const firstNewCell = newRow.firstElementChild as HTMLElement;
+              if (firstNewCell) {
+                firstNewCell.focus();
+                const range = document.createRange();
+                range.selectNodeContents(firstNewCell);
+                range.collapse(false);
+                sel?.removeAllRanges();
+                sel?.addRange(range);
+              }
+            }
+          }
+        }
+        return;
+      }
+    }
+
     if (event.key === "Enter" && !event.shiftKey) {
       const anchor = window.getSelection()?.anchorNode;
       const el = anchor && (anchor.nodeType === 1 ? (anchor as Element) : anchor.parentElement);
@@ -306,7 +372,6 @@ export default function NoteEditor({
         }, 0);
       }
     }
-
   };
 
   const MAX_TAG_LENGTH = 30;
@@ -422,6 +487,7 @@ export default function NoteEditor({
             {tool("Alıntı", Quote, () => toggleWrap("BLOCKQUOTE"), active.quote)}
             {tool("Kod bloğu", Code, () => toggleWrap("PRE"), active.code)}
             {tool("Bağlantı", Link2, addLink, active.link)}
+            {tool("Tablo", Table, insertTable)}
             {tool("Ayırıcı çizgi", Minus, () => exec("insertHorizontalRule"))}
           </div>
           <div className="tool-group" ref={templateMenuRef} style={{ position: "relative" }}>

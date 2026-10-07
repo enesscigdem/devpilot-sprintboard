@@ -31,6 +31,7 @@ export type NoteSortOption = "updatedAt" | "createdAt" | "title";
 const ALLOWED_TAGS = new Set([
   "P", "BR", "DIV", "B", "STRONG", "I", "EM", "U", "S", "STRIKE", "H1", "H2", "H3",
   "UL", "OL", "LI", "BLOCKQUOTE", "PRE", "CODE", "A", "HR",
+  "TABLE", "THEAD", "TBODY", "TFOOT", "TR", "TH", "TD",
 ]);
 
 const escapeHtml = (text: string) =>
@@ -63,6 +64,9 @@ export function sanitizeHtml(input: string): string {
       }
       if (el.tagName === "UL" && el.hasAttribute("data-checklist")) copy.setAttribute("data-checklist", "");
       if (el.tagName === "LI" && el.getAttribute("data-checked") === "true") copy.setAttribute("data-checked", "true");
+      if (el.hasAttribute("style")) copy.setAttribute("style", el.getAttribute("style") ?? "");
+      if (el.hasAttribute("colspan")) copy.setAttribute("colspan", el.getAttribute("colspan") ?? "");
+      if (el.hasAttribute("rowspan")) copy.setAttribute("rowspan", el.getAttribute("rowspan") ?? "");
       clean(el, copy);
       out.appendChild(copy);
     });
