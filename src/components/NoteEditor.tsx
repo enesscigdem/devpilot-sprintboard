@@ -215,7 +215,7 @@ export default function NoteEditor({
   const MAX_TAG_LENGTH = 30;
 
   const handleAddTag = (rawTag: string) => {
-    const trimmed = rawTag.trim().replace(/^#+/, "").trim();
+    const trimmed = rawTag.trim().replace(/^#+/, "").replace(/\s+/g, "-").replace(/,/g, "").trim();
     if (!trimmed) {
       const msg = "Lütfen geçerli bir etiket girin.";
       setTagError(msg);
@@ -224,12 +224,6 @@ export default function NoteEditor({
     }
     if (trimmed.length > MAX_TAG_LENGTH) {
       const msg = `Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`;
-      setTagError(msg);
-      onToast?.(msg);
-      return;
-    }
-    if (/[\s,]/.test(trimmed)) {
-      const msg = "Etiket boşluk veya virgül içeremez.";
       setTagError(msg);
       onToast?.(msg);
       return;
@@ -339,12 +333,12 @@ export default function NoteEditor({
                 {announce}
               </div>
               {currentTags.map((tag) => (
-                <span key={tag} className="tag-chip inline-flex items-center">
+                <span key={tag} className="tag-chip inline-flex items-center gap-1">
                   <span>#{tag}</span>
                   {!isTrash && (
                     <button
                       type="button"
-                      className="tag-remove inline-flex items-center justify-center"
+                      className="tag-remove ml-1 inline-flex items-center justify-center"
                       aria-label={`${tag} etiketini kaldır`}
                       onClick={() => handleRemoveTag(tag)}
                     >

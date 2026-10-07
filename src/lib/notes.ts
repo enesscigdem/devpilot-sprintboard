@@ -261,6 +261,17 @@ export function isOverdue(isoDate: string, now = Date.now()): boolean {
   return dueTime < now;
 }
 
+/** Etiket dizesini temizler; boşlukları tireye çevirir ve özel karakterleri arındırır. */
+export function slugifyTag(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\p{L}\p{N}_-]/gu, "")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /** Güvenli dosya adı üretir (özel karakterleri ve geçersiz simgeleri temizler). */
 export function sanitizeFilename(input: string, fallback = "not"): string {
   const cleaned = input
