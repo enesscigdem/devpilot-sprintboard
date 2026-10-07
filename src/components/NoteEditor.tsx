@@ -285,15 +285,17 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
       <div className="editor-scroll">
         <article className="editor-page">
           {confirmDelete && (
-            <div className="delete-confirm-box" role="alert">
-              <p className="delete-confirm-text">Bu not çöp kutusuna taşınacak.</p>
-              <div className="delete-confirm-actions">
-                <button type="button" className="delete-confirm-btn delete-btn-danger" onClick={onDelete}>
-                  Sil
-                </button>
-                <button type="button" className="delete-confirm-btn delete-btn-cancel" onClick={() => setConfirmDelete(false)}>
-                  Vazgeç
-                </button>
+            <div className="delete-confirm-overlay" role="dialog" aria-modal="true" aria-label="Notu silme onayı">
+              <div className="delete-confirm-box" role="alert">
+                <p className="delete-confirm-text">Bu not çöp kutusuna taşınacak.</p>
+                <div className="delete-confirm-actions">
+                  <button type="button" className="delete-confirm-btn delete-btn-danger" onClick={onDelete}>
+                    Sil
+                  </button>
+                  <button type="button" className="delete-confirm-btn delete-btn-cancel" onClick={() => setConfirmDelete(false)}>
+                    Vazgeç
+                  </button>
+                </div>
               </div>
             </div>
           )}
