@@ -1,3 +1,10 @@
+export type NoteHistoryItem = {
+  id: string;
+  title: string;
+  html: string;
+  timestamp: number;
+};
+
 export type Note = {
   id: string;
   title: string;
@@ -11,6 +18,8 @@ export type Note = {
   /** ISO 8601 tarih dizesi (YYYY-MM-DD) veya undefined. */
   dueDate?: string;
   tags: string[];
+  /** Önceki düzenleme sürümleri (en fazla 15 kayıt). */
+  history?: NoteHistoryItem[];
 };
 
 export const NOTES_KEY = "sprintboard.notes.v2";
@@ -117,7 +126,15 @@ function fromStored(entry: unknown, seen: Set<string>): Note | null {
   const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
   const dueDate = typeof r.dueDate === "string" ? r.dueDate : undefined;
   const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string") : [];
-  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags };
+  const history: NoteHistoryItem[] = Array.isArray(r.history)
+    ? (r.history as Record<string, unknown>[]).filter((h) => h && typeof h === "object").map((h) => ({
+        id: typeof h.id === "string" ? h.id : newId(),
+        title: typeof h.title === "string" ? h.title : "",
+        html: typeof h.html === "string" ? sanitizeHtml(h.html) : "",
+        timestamp: num(h.timestamp, now),
+      }))
+    : [];
+  return { id, title, html, pinned: r.pinned === true, createdAt, updatedAt: num(r.updatedAt, createdAt), deletedAt, dueDate, tags, history };
 }
 
 /** Eski görev kaydını (başlık, açıklama, durum) zengin bir nota çevirir. */
@@ -186,6 +203,28 @@ export const permanentlyDeleteNote = (notes: Note[], id: string): Note[] =>
 
 export const emptyTrash = (notes: Note[]): Note[] =>
   notes.filter((n) => !n.deletedAt);
+
+export const MAX_NOTE_HISTORY = 15;
+
+/** Mevcut not içeriğini geçmişe ekler ve notu günceller. */
+export function recordNoteSnapshot(prevNote: Note, newTitle: string, newHtml: string, now = Date.now()): NoteHistoryItem[] {
+  const currentHistory = prevNote.history ?? [];
+  // Eğer içerik hiç değişmediyse yeni geçmiş kaydı üretme
+  if (prevNote.title === newTitle && prevNote.html === newHtml) {
+    return currentHistory;
+  }
+  // Eğer önceki sürüm tamamen boşsa kaydetme
+  if (!prevNote.title.trim() && !htmlToText(prevNote.html).trim()) {
+    return currentHistory;
+  }
+  const snapshot: NoteHistoryItem = {
+    id: newId(),
+    title: prevNote.title,
+    html: prevNote.html,
+    timestamp: prevNote.updatedAt || now,
+  };
+  return [snapshot, ...currentHistory.filter((h) => h.id !== snapshot.id)].slice(0, MAX_NOTE_HISTORY);
+}
 
 export function getNoteTitle(note: { title?: string; html?: string }, fallback = "Başlıksız not"): string {
   const title = (note.title ?? "").trim();
@@ -443,6 +482,14 @@ export function importNotesFromJson(
     const deletedAt = typeof r.deletedAt === "number" && Number.isFinite(r.deletedAt) ? r.deletedAt : undefined;
     const dueDate = typeof r.dueDate === "string" && r.dueDate.trim() ? r.dueDate.trim() : undefined;
     const tags = Array.isArray(r.tags) ? r.tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0) : [];
+    const history: NoteHistoryItem[] = Array.isArray(r.history)
+      ? (r.history as Record<string, unknown>[]).filter((h) => h && typeof h === "object").map((h) => ({
+          id: typeof h.id === "string" ? h.id : newId(),
+          title: typeof h.title === "string" ? h.title : "",
+          html: typeof h.html === "string" ? sanitizeHtml(h.html) : "",
+          timestamp: num(h.timestamp, now),
+        }))
+      : [];
 
     importedNotes.push({
       id,
@@ -454,6 +501,7 @@ export function importNotesFromJson(
       deletedAt,
       dueDate,
       tags,
+      history,
     });
   }
 

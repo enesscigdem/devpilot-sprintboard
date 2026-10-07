@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
-  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw,
+  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw, History,
 } from "lucide-react";
 import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes";
 
@@ -53,6 +53,7 @@ export default function NoteEditor({
   const [tagError, setTagError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [announce, setAnnounce] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
 
   const currentTags = useMemo(() => note.tags ?? [], [note.tags]);
 
@@ -257,6 +258,19 @@ export default function NoteEditor({
     setTagError(null);
   };
 
+  const handleRestoreVersion = (version: { title: string; html: string; tags?: string[] }) => {
+    if (bodyRef.current) bodyRef.current.innerHTML = version.html;
+    if (titleRef.current) titleRef.current.value = version.title;
+    setWords(wordCount(version.html));
+    onChange({
+      title: version.title,
+      html: version.html,
+      tags: version.tags ?? note.tags,
+    });
+    setShowHistory(false);
+    onToast?.("Önceki sürüm geri yüklendi.");
+  };
+
   const onPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault();
     const html = event.clipboardData.getData("text/html");
@@ -317,9 +331,48 @@ export default function NoteEditor({
           </div>
           <div className="tool-spacer" />
           <div className="tool-group">
+            {tool("Düzenleme geçmişi", History, () => setShowHistory((prev) => !prev), showHistory)}
             {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin, note.pinned)}
             {tool("Notu sil", Trash2, onDelete)}
           </div>
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="editor-history-dialog" style={{ padding: "1rem", borderBottom: "1px solid var(--border, #e5e7eb)", background: "var(--bg-secondary, #f9fafb)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+            <strong style={{ fontSize: "0.9rem" }}>Düzenleme Geçmişi</strong>
+            <button type="button" className="tool" aria-label="Geçmişi kapat" onClick={() => setShowHistory(false)}>
+              <X size={16} />
+            </button>
+          </div>
+          {(!note.history || note.history.length === 0) ? (
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #6b7280)", margin: 0 }}>
+              Bu not için henüz kaydedilmiş bir geçmiş sürüm bulunmuyor.
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto" }}>
+              {note.history.map((item, idx) => (
+                <div key={item.id || idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem", borderRadius: "0.375rem", background: "var(--bg, #fff)", border: "1px solid var(--border, #e5e7eb)", fontSize: "0.85rem" }}>
+                  <div>
+                    <div><strong>{item.title || "Başlıksız"}</strong></div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #6b7280)" }}>
+                      {formatFullDate(item.timestamp)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="tool-text-btn"
+                    style={{ fontSize: "0.8rem", padding: "0.25rem 0.5rem" }}
+                    onClick={() => handleRestoreVersion(item)}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Geri Yükle</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
