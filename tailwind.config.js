@@ -59,6 +59,12 @@ export default {
           text: "#1C1C1E",
           textSecondary: "#86868B",
           borderSubtle: "#E5E5E5",
+          darkBg: "#121214",
+          darkCard: "#1C1C1E",
+          darkElevated: "#252528",
+          darkBorder: "rgba(255, 255, 255, 0.12)",
+          darkText: "#F5F5F7",
+          darkTextSecondary: "#A1A1A6",
         },
       },
       borderRadius: {
@@ -78,6 +84,8 @@ export default {
         notes: "0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)",
         notesHover: "0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
         notesElevated: "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)",
+        cardDark: "0 4px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25)",
+        glow: "0 0 0 1px rgba(255, 255, 255, 0.1)",
       },
       keyframes: {
         "accordion-down": {

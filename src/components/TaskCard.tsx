@@ -62,20 +62,23 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
       onClick={handleToggle}
       style={{
         backgroundColor: "var(--surface-2)",
-        borderRadius: "var(--radius-lg)",
+        borderRadius: "var(--radius-lg, 12px)",
         padding: "var(--space-4)",
         cursor: "pointer",
         transition: "all 0.2s ease",
-        border: "1px solid var(--surface-3)",
+        border: "1px solid var(--border, var(--surface-3))",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
         position: "relative",
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = "var(--surface-3)";
-        e.currentTarget.style.borderColor = "var(--accent)";
+        e.currentTarget.style.borderColor = "var(--border-hover, var(--accent))";
+        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.3)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = "var(--surface-2)";
-        e.currentTarget.style.borderColor = "var(--surface-3)";
+        e.currentTarget.style.borderColor = "var(--border, var(--surface-3))";
+        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.2)";
       }}
     >
       <div
@@ -114,7 +117,8 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
         >
           <div
             style={{
-              fontSize: "var(--text-base)",
+              fontSize: "var(--text-base, 1rem)",
+              fontWeight: 500,
               color: task.completed ? "var(--text-muted)" : "var(--text-primary)",
               textDecoration: task.completed ? "line-through" : "none",
               lineHeight: 1.5,
@@ -148,20 +152,20 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
                 fontWeight: 500,
                 width: "fit-content",
                 backgroundColor: overdue
-                  ? "rgba(239, 68, 68, 0.1)"
+                  ? "rgba(239, 68, 68, 0.15)"
                   : dueToday
-                  ? "rgba(251, 191, 36, 0.1)"
+                  ? "rgba(251, 191, 36, 0.15)"
                   : "var(--surface-3)",
                 color: overdue
-                  ? "#ef4444"
+                  ? "var(--danger, #f87171)"
                   : dueToday
-                  ? "#fbbf24"
+                  ? "var(--warning, #fbbf24)"
                   : "var(--text-secondary)",
                 border: overdue
-                  ? "1px solid rgba(239, 68, 68, 0.3)"
+                  ? "1px solid rgba(239, 68, 68, 0.4)"
                   : dueToday
-                  ? "1px solid rgba(251, 191, 36, 0.3)"
-                  : "1px solid var(--surface-4)",
+                  ? "1px solid rgba(251, 191, 36, 0.4)"
+                  : "1px solid var(--border, var(--surface-4))",
               }}
             >
               {overdue ? (

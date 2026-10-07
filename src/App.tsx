@@ -570,7 +570,7 @@ export default function App() {
   return (
     <div className="app" data-pane={mobilePane}>
       <aside className="sidebar" aria-label="Notlar">
-        <div className="sidebar-tabs" role="tablist" style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "8px 10px 0", gap: "4px" }}>
+        <div className="sidebar-tabs" role="tablist" style={{ display: "flex", borderBottom: "1px solid var(--line)", padding: "8px 10px 0", gap: "4px" }}>
           <button
             type="button"
             role="tab"
@@ -582,7 +582,7 @@ export default function App() {
               fontSize: "13px",
               fontWeight: 600,
               border: "none",
-              borderBottom: currentView === "notes" ? "2px solid var(--primary, #3b82f6)" : "2px solid transparent",
+              borderBottom: currentView === "notes" ? "2px solid var(--accent)" : "2px solid transparent",
               background: "none",
               color: currentView === "notes" ? "var(--text)" : "var(--text-2)",
               cursor: "pointer",
@@ -609,7 +609,7 @@ export default function App() {
               fontSize: "13px",
               fontWeight: 600,
               border: "none",
-              borderBottom: currentView === "trash" ? "2px solid var(--primary, #3b82f6)" : "2px solid transparent",
+              borderBottom: currentView === "trash" ? "2px solid var(--accent)" : "2px solid transparent",
               background: "none",
               color: currentView === "trash" ? "var(--text)" : "var(--text-2)",
               cursor: "pointer",
@@ -699,11 +699,11 @@ export default function App() {
           )}
         </div>
         {currentView === "notes" && (
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px" }}>
-            <span style={{ fontSize: "12px" }}>Sırala:</span>
+          <label className="sort-bar" style={{ borderTop: "none" }}>
+            <span>Sırala:</span>
             <select
               aria-label="Notları sırala"
-              className="appearance-none h-[34px] rounded-[9px] border-0 bg-[var(--hover)] px-2.5 text-sm text-[var(--text)] cursor-pointer outline-none focus:ring-2 focus:ring-[var(--focus)]"
+              className="sort-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as NoteSortOption)}
             >
@@ -746,14 +746,6 @@ export default function App() {
                     alignItems: "center",
                     gap: "4px",
                     whiteSpace: "nowrap",
-                    ...(isSelected
-                      ? {
-                          backgroundColor: "var(--primary, #3b82f6)",
-                          color: "#ffffff",
-                          fontWeight: 600,
-                          borderColor: "var(--primary, #3b82f6)",
-                        }
-                      : {}),
                   }}
                   aria-pressed={isSelected}
                   onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}

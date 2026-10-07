@@ -133,8 +133,9 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
           transform: translate(-50%, -50%);
           width: min(90vw, 480px);
           background: var(--surface-2, #0F131C);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
           border-radius: 16px;
-          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+          box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
           z-index: 51;
         }
 
@@ -143,7 +144,7 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
           align-items: center;
           justify-content: space-between;
           padding: var(--space-5, 1.5rem) var(--space-6, 2rem);
-          border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+          border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.1));
         }
 
         .dialog-header h2 {
@@ -198,8 +199,8 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
           width: 100%;
           padding: var(--space-3, 0.75rem);
           background: var(--surface-1, #0A0D12);
-          border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-          border-radius: 8px;
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+          border-radius: 10px;
           color: var(--text-primary, #F8FAFC);
           font-size: 0.9375rem;
           line-height: 1.5;
@@ -210,12 +211,12 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
         .form-field textarea:focus {
           outline: none;
           border-color: var(--accent, #38BDF8);
-          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
         }
 
         .form-field input::placeholder,
         .form-field textarea::placeholder {
-          color: var(--text-tertiary, #64748B);
+          color: var(--text-tertiary, #94A3B8);
         }
 
         .form-field textarea {
@@ -229,7 +230,7 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
         }
 
         .form-field input[type="date"]::-webkit-calendar-picker-indicator {
-          filter: invert(0.6);
+          filter: invert(0.8);
           cursor: pointer;
         }
 
@@ -246,10 +247,9 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
           justify-content: center;
           gap: 0.5rem;
           padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-          border-radius: 999px;
+          border-radius: 10px;
           font-size: 0.9375rem;
           font-weight: 500;
-          border: none;
           cursor: pointer;
           transition: all 150ms ease;
         }
@@ -258,11 +258,13 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
           flex: 1;
           background: var(--accent, #38BDF8);
           color: var(--surface-1, #0A0D12);
+          border: 1px solid transparent;
         }
 
         .btn-primary:hover:not(:disabled) {
           background: #22A8E8;
           transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
         }
 
         .btn-primary:disabled {
@@ -273,11 +275,13 @@ export default function AddTaskDialog({ isOpen, onClose, onAdd }: Props) {
         .btn-secondary {
           background: var(--surface-3, #161D2B);
           color: var(--text-secondary, #CBD5E1);
+          border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
         }
 
         .btn-secondary:hover {
           background: var(--surface-4, #1E2636);
           color: var(--text-primary, #F8FAFC);
+          border-color: var(--border-hover, rgba(255, 255, 255, 0.2));
         }
       `}</style>
     </>
