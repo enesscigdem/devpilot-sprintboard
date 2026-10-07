@@ -102,7 +102,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       aria-live={isAlert ? "assertive" : "polite"}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative overflow-hidden rounded-xl border p-4 shadow-lg transition-all duration-300 transform translate-y-0 w-80 sm:w-96 ${styles.container}`}
+      className={`relative overflow-hidden rounded-xl border p-4 shadow-xl transition-all duration-300 ease-out transform translate-y-0 w-80 sm:w-96 animate-in fade-in slide-in-from-right-5 duration-300 ${styles.container}`}
     >
       <div className="flex items-start gap-3">
         {styles.icon}
@@ -168,7 +168,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
     <div
       aria-live="polite"
       aria-label="Bildirimler"
-      className="fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 pointer-events-auto"
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-h-[calc(100vh-2rem)] overflow-y-auto p-1 pointer-events-auto"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />

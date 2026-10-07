@@ -21,26 +21,38 @@ interface ToastNotification {
 
 function ToastItem({ toast, onDismiss }: { toast: ToastNotification; onDismiss: (id: string) => void }) {
   const [isPaused, setIsPaused] = useState(false);
-  const remainingRef = useRef(toast.duration ?? 3500);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startTimeRef = useRef(Date.now());
+  const [isExiting, setIsExiting] = useState(false);
+  const totalDuration = toast.duration ?? 3500;
+  const [remaining, setRemaining] = useState(totalDuration);
+  const isExitingRef = useRef(false);
+
+  const handleDismiss = () => {
+    if (isExitingRef.current) return;
+    isExitingRef.current = true;
+    setIsExiting(true);
+    setTimeout(() => {
+      onDismiss(toast.id);
+    }, 240);
+  };
 
   useEffect(() => {
-    if (isPaused) {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startTimeRef.current));
-      return;
-    }
+    if (isPaused || isExiting) return;
 
-    startTimeRef.current = Date.now();
-    timerRef.current = setTimeout(() => {
-      onDismiss(toast.id);
-    }, remainingRef.current);
+    const interval = 20;
+    const timer = setInterval(() => {
+      setRemaining((prev) => {
+        const next = prev - interval;
+        if (next <= 0) {
+          clearInterval(timer);
+          handleDismiss();
+          return 0;
+        }
+        return next;
+      });
+    }, interval);
 
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [isPaused, toast.id, onDismiss]);
+    return () => clearInterval(timer);
+  }, [isPaused, isExiting]);
 
   const icons = {
     success: <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />,
@@ -56,44 +68,61 @@ function ToastItem({ toast, onDismiss }: { toast: ToastNotification; onDismiss: 
     info: "border-blue-500/20 bg-white dark:bg-[#252528] text-slate-800 dark:text-slate-100",
   };
 
+  const progressColors = {
+    success: "bg-emerald-500",
+    error: "bg-rose-500",
+    warning: "bg-amber-500",
+    info: "bg-blue-500",
+  };
+
+  const progressPercent = Math.max(0, Math.min(100, (remaining / totalDuration) * 100));
+
   return (
     <div
       role="status"
       aria-live={toast.type === "error" ? "assertive" : "polite"}
       aria-atomic="true"
-      className={`toast-item animate-toast-in flex items-start gap-3 p-3.5 rounded-xl border shadow-lg max-w-md w-full pointer-events-auto transition-all ${bgStyles[toast.type]}`}
+      className={`toast-item ${isExiting ? "animate-toast-out" : "animate-toast-in"} relative overflow-hidden flex flex-col p-3.5 rounded-xl border shadow-lg max-w-md w-full pointer-events-auto transition-all ${bgStyles[toast.type]}`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="pt-0.5">{icons[toast.type]}</div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold leading-tight">{toast.title}</div>
-        {toast.description && (
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
-            {toast.description}
-          </div>
-        )}
-        {toast.action && (
-          <button
-            type="button"
-            className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
-            onClick={() => {
-              toast.action?.onClick();
-              onDismiss(toast.id);
-            }}
-          >
-            {toast.action.label}
-          </button>
-        )}
+      <div className="flex items-start gap-3 w-full">
+        <div className="pt-0.5">{icons[toast.type]}</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold leading-tight">{toast.title}</div>
+          {toast.description && (
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+              {toast.description}
+            </div>
+          )}
+          {toast.action && (
+            <button
+              type="button"
+              className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded"
+              onClick={() => {
+                toast.action?.onClick();
+                handleDismiss();
+              }}
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          aria-label="Kapat"
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded transition-colors -mr-1 -mt-1"
+          onClick={handleDismiss}
+        >
+          <X size={15} />
+        </button>
       </div>
-      <button
-        type="button"
-        aria-label="Kapat"
-        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded transition-colors -mr-1 -mt-1"
-        onClick={() => onDismiss(toast.id)}
-      >
-        <X size={15} />
-      </button>
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/5 dark:bg-white/10 overflow-hidden">
+        <div
+          className={`h-full toast-progress ${progressColors[toast.type]}`}
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
     </div>
   );
 }
