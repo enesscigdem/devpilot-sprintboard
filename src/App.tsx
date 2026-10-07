@@ -488,12 +488,12 @@ export default function App() {
   return (
     <div className="app" data-pane={mobilePane}>
       <aside className="sidebar" aria-label="Notlar">
-        <header className="sidebar-header">
-          <div className="sidebar-title">
-            <h1>{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}</h1>
+        <header className="sidebar-header" style={{ flexWrap: "nowrap", minWidth: 0 }}>
+          <div className="sidebar-title" style={{ minWidth: 0, flexShrink: 0, whiteSpace: "nowrap" }}>
+            <h1 style={{ whiteSpace: "nowrap" }}>{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}</h1>
             <span className="sidebar-count">{currentView === "trash" ? `${trashNotes.length} not` : `${realCount} not`}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
             <input
               ref={fileInputRef}
               type="file"
