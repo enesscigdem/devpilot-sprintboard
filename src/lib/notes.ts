@@ -75,7 +75,7 @@ export function sanitizeHtml(input: string): string {
 export function htmlToText(html: string): string {
   if (typeof document === "undefined") return "";
   const holder = document.createElement("div");
-  holder.innerHTML = html;
+  holder.innerHTML = html.replace(/></g, "> <");
   return (holder.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
