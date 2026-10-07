@@ -25,6 +25,25 @@ const BLOCKS = [
   { value: "H3", label: "Küçük başlık" },
 ];
 
+const TAG_COLORS = [
+  { bg: "#e0f2fe", text: "#0369a1", border: "#bae6fd" },
+  { bg: "#fef3c7", text: "#b45309", border: "#fde68a" },
+  { bg: "#dcfce7", text: "#15803d", border: "#bbf7d0" },
+  { bg: "#f3e8ff", text: "#7e22ce", border: "#e9d5ff" },
+  { bg: "#ffe4e6", text: "#be123c", border: "#fecdd3" },
+  { bg: "#ffedd5", text: "#c2410c", border: "#fed7aa" },
+  { bg: "#ccfbf1", text: "#0f766e", border: "#99f6e4" },
+  { bg: "#ede9fe", text: "#6d28d9", border: "#ddd6fe" },
+];
+
+function getTagColor(tag: string) {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
+}
+
 const run = (command: string, value?: string) => document.execCommand(command, false, value);
 
 export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allTags, suggestions }: Props) {
@@ -201,26 +220,36 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
   const MAX_TAG_LENGTH = 30;
 
   const handleAddTag = (rawTag: string) => {
-    const trimmed = rawTag.trim().replace(/^#+/, "").trim();
-    if (!trimmed) {
+    const parts = rawTag
+      .split(/[\s,]+/)
+      .map((p) => p.trim().replace(/^#+/, "").trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
       setTagError("Lütfen geçerli bir etiket girin.");
       return;
     }
-    if (trimmed.length > MAX_TAG_LENGTH) {
-      setTagError(`Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`);
-      return;
+
+    const validParts: string[] = [];
+    for (const part of parts) {
+      if (part.length > MAX_TAG_LENGTH) {
+        setTagError(`Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`);
+        return;
+      }
+      if (currentTags.includes(part) || validParts.includes(part)) {
+        continue;
+      }
+      validParts.push(part);
     }
-    if (/[\s,]/.test(trimmed)) {
-      setTagError("Etiket boşluk veya virgül içeremez.");
-      return;
-    }
-    if (currentTags.includes(trimmed)) {
+
+    if (validParts.length === 0) {
       setTagError("Bu etiket zaten eklenmiş.");
       return;
     }
+
     setTagError(null);
-    setAnnounce(`"${trimmed}" etiketi eklendi`);
-    onChange({ tags: [...currentTags, trimmed] });
+    setAnnounce(validParts.map((t) => `"${t}" etiketi eklendi`).join(", "));
+    onChange({ tags: [...currentTags, ...validParts] });
     setTagInput("");
     setShowSuggestions(false);
   };
@@ -307,24 +336,54 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
             onChange={(e) => onChange({ title: e.target.value.replace(/\n/g, " ") })}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); bodyRef.current?.focus(); } }} />
           <div className="editor-tags-container">
-            <div className="editor-tags" aria-label="Etiketler">
+            <div className="editor-tags" aria-label="Etiketler" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
               <div className="sr-only" aria-live="polite" aria-atomic="true">
                 {announce}
               </div>
-              {currentTags.map((tag) => (
-                <span key={tag} className="tag-chip">
-                  <span>#{tag}</span>
-                  <button
-                    type="button"
-                    className="tag-remove"
-                    aria-label={`${tag} etiketini kaldır`}
-                    onClick={() => handleRemoveTag(tag)}
+              {currentTags.map((tag) => {
+                const color = getTagColor(tag);
+                return (
+                  <span
+                    key={tag}
+                    className="tag-chip"
+                    style={{
+                      backgroundColor: color.bg,
+                      color: color.text,
+                      borderColor: color.border,
+                      borderRadius: "9999px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "2px 4px 2px 10px",
+                    }}
                   >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-              <div className="tag-input-wrapper">
+                    <span>#{tag}</span>
+                    <button
+                      type="button"
+                      className="tag-remove"
+                      aria-label={`${tag} etiketini kaldır`}
+                      onClick={() => handleRemoveTag(tag)}
+                      style={{
+                        width: "24px",
+                        height: "24px",
+                        minWidth: "24px",
+                        minHeight: "24px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "50%",
+                        padding: 0,
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </span>
+                );
+              })}
+              <div className="tag-input-wrapper" style={{ display: "inline-flex", flex: "1 1 120px", minWidth: "100px" }}>
                 <input
                   type="text"
                   className="tag-input"
@@ -337,8 +396,15 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
                     if (tagError) setTagError(null);
                     setShowSuggestions(true);
                   }}
+                  onPaste={(e) => {
+                    const pasteText = e.clipboardData.getData("text");
+                    if (pasteText && /[\s,]/.test(pasteText.trim())) {
+                      e.preventDefault();
+                      handleAddTag(pasteText);
+                    }
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === ",") {
+                    if (e.key === "Enter" || e.key === "," || e.key === " ") {
                       e.preventDefault();
                       if (tagInput.trim()) {
                         handleAddTag(tagInput);
