@@ -325,6 +325,26 @@ export default function App() {
     showToast({ type: "success", title: "Not geri yüklendi" });
   };
 
+  const handleNavigateNote = (noteId: string) => {
+    const target = notes.find((n) => n.id === noteId);
+    if (!target) {
+      showToast({
+        type: "warning",
+        title: "Bağlantılı not bulunamadı",
+      });
+      return;
+    }
+    if (target.deletedAt) {
+      setCurrentView("trash");
+    } else {
+      setCurrentView("notes");
+    }
+    if (selectedTag && (!target.tags || !target.tags.includes(selectedTag))) {
+      setSelectedTag(null);
+    }
+    select(noteId);
+  };
+
   const handlePermanentDelete = (id: string) => {
     setDeleteTargetId(id);
   };
@@ -914,6 +934,10 @@ export default function App() {
               note={selected}
               isTrash={Boolean(selected.deletedAt)}
               allTags={allTags}
+              allNotes={notes}
+              notes={notes}
+              onSelectNote={handleNavigateNote}
+              onNavigateNote={handleNavigateNote}
               onRestore={() => handleRestore(selected.id)}
               onPermanentDelete={() => handlePermanentDelete(selected.id)}
               onChange={(patch) => {
