@@ -836,6 +836,73 @@ mark,
 
 .sidebar-menu-item:hover,
 .sidebar-menu-item:focus,
+.sidebar-search input,
+.sidebar-search-input,
+.search-input,
+.sidebar-sort select,
+.sidebar-sort-select,
+.sort-select {
+  box-sizing: border-box;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.sidebar-sort,
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.sidebar-sort label,
+.sort-control label {
+  color: var(--text-2);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.sidebar-sort select,
+.sidebar-sort-select,
+.sort-select {
+  appearance: none;
+  padding: 0 32px 0 10px;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-2) 50%), linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 15px, calc(100% - 10px) 15px;
+  background-repeat: no-repeat;
+  background-size: 4px 4px, 4px 4px;
+}
+
+.sidebar-sort select:focus,
+.sidebar-sort-select:focus,
+.sort-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+  outline: none;
+}
+
+.tag-filter-title,
+.tag-filter-heading,
+.tag-filter h3 {
+  margin: 12px 0 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tag-filter button.active,
+.tag-filter button[aria-pressed="true"],
+.tag-filter-option.active,
+.tag-filter-option[aria-selected="true"] {
+  background-color: var(--selected);
+  color: var(--selected-text);
+  font-weight: 600;
+}
+
 .sidebar-menu-item:focus-visible {
   background-color: var(--hover);
   outline: none;
