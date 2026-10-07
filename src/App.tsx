@@ -567,6 +567,15 @@ export default function App() {
     : (notes.find((n) => n.id === selectedId && (currentView === "trash" ? Boolean(n.deletedAt) : !n.deletedAt)) ?? null);
   const realCount = notes.filter((n) => !n.deletedAt && !isEmpty(n)).length;
 
+  useEffect(() => {
+    if (selected) {
+      const noteTitle = getNoteTitle(selected);
+      document.title = `${noteTitle} — Notlar`;
+    } else {
+      document.title = currentView === "trash" ? "Çöp Kutusu — Notlar" : "Notlar";
+    }
+  }, [selected, currentView]);
+
   return (
     <div className="app" data-pane={mobilePane}>
       <aside className="sidebar" aria-label="Notlar">
