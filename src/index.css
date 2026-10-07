@@ -945,3 +945,22 @@ mark,
 .trash-empty-button {
   min-height: 44px;
 }
+
+/* Delete confirmation banner and buttons */
+.delete-confirm-banner,
+.delete-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(215, 0, 21, 0.06);
+  border-bottom: 1px solid rgba(215, 0, 21, 0.2);
+}
+
+.delete-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
