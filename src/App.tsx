@@ -1,6 +1,6 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Maximize2, Minimize2, Monitor, Moon, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
@@ -207,13 +207,12 @@ function preview(note: Note, query: string = ""): string {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
     const saved = localStorage.getItem("theme");
-    if (saved === "light" || saved === "dark") return saved;
-    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    if (saved === "light" || saved === "dark" || saved === "system") return saved;
+    return "system";
   });
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [notes, setNotes] = useState<Note[]>(loadNotes);
   const [draft, setDraft] = useState<Note | null>(null);
   const [currentView, setCurrentView] = useState<"notes" | "trash">("notes");
@@ -248,12 +247,36 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyTheme = () => {
+      const resolved = theme === "system" ? (mediaQuery.matches ? "dark" : "light") : theme;
+      document.documentElement.setAttribute("data-theme", resolved);
+      if (resolved === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+
+    applyTheme();
     localStorage.setItem("theme", theme);
+
+    const listener = () => {
+      if (theme === "system") {
+        applyTheme();
+      }
+    };
+
+    mediaQuery.addEventListener("change", listener);
+    return () => mediaQuery.removeEventListener("change", listener);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    setTheme((prev) => {
+      if (prev === "light") return "dark";
+      if (prev === "dark") return "system";
+      return "light";
+    });
   };
 
   useEffect(() => {
@@ -276,6 +299,7 @@ export default function App() {
 
       if (event.key === "Escape") {
         setShowShortcuts(false);
+        setIsFocusMode(false);
       }
 
       if (event.key === "?" && !isEditable) {
@@ -586,7 +610,7 @@ export default function App() {
   }, [selected, currentView]);
 
   return (
-    <div className="app" data-pane={mobilePane}>
+    <div className={`app ${isFocusMode ? "focus-mode" : ""}`} data-pane={mobilePane} data-focus-mode={isFocusMode ? "true" : "false"}>
       <aside className="sidebar" aria-label="Notlar">
         <div className="sidebar-tabs" role="tablist" style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "8px 10px 0", gap: "4px" }}>
           <button
@@ -692,11 +716,20 @@ export default function App() {
             <button
               type="button"
               className="icon-button"
-              aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
-              title={theme === "dark" ? "Açık tema" : "Koyu tema"}
+              aria-label={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+              title={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+              onClick={() => setIsFocusMode((prev) => !prev)}
+            >
+              {isFocusMode ? <Minimize2 size={19} /> : <Maximize2 size={19} />}
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={`Tema değiştir (Mevcut: ${theme === "dark" ? "Koyu" : theme === "light" ? "Açık" : "Sistem"})`}
+              title={theme === "dark" ? "Tema: Koyu" : theme === "light" ? "Tema: Açık" : "Tema: Sistem"}
               onClick={toggleTheme}
             >
-              {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+              {theme === "dark" ? <Moon size={19} /> : theme === "light" ? <Sun size={19} /> : <Monitor size={19} />}
             </button>
             {currentView === "notes" && (
               <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
@@ -897,6 +930,24 @@ export default function App() {
       </aside>
 
       <main className="detail">
+        {isFocusMode && (
+          <button
+            type="button"
+            className="icon-button focus-mode-exit"
+            aria-label="Odak modundan çık"
+            title="Odak modundan çık"
+            style={{
+              position: "absolute",
+              top: "12px",
+              right: "12px",
+              zIndex: 30,
+              backgroundColor: "var(--hover)",
+            }}
+            onClick={() => setIsFocusMode(false)}
+          >
+            <Minimize2 size={18} />
+          </button>
+        )}
         {selected ? (
           <>
             <button type="button" className="back-button" onClick={() => {

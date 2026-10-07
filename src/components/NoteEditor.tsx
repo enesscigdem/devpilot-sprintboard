@@ -29,6 +29,12 @@ const BLOCKS = [
   { value: "H3", label: "Küçük başlık" },
 ];
 
+const FONT_SIZES = [
+  { value: "small", label: "Küçük Yazı" },
+  { value: "standard", label: "Standart Yazı" },
+  { value: "large", label: "Büyük Yazı" },
+];
+
 const FALLBACK_TEMPLATES = [
   {
     id: "meeting",
@@ -72,6 +78,13 @@ export default function NoteEditor({
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const [active, setActive] = useState<Active>({});
   const [block, setBlock] = useState("P");
+  const [fontSize, setFontSize] = useState<"small" | "standard" | "large">(() => {
+    try {
+      return (localStorage.getItem("note_font_size") as "small" | "standard" | "large") || "standard";
+    } catch {
+      return "standard";
+    }
+  });
   const [words, setWords] = useState(() => wordCount(note.html));
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
@@ -350,6 +363,24 @@ export default function NoteEditor({
             onChange={(e) => exec("formatBlock", e.target.value)}>
             {BLOCKS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
           </select>
+          <select
+            className="block-select font-size-select"
+            aria-label="Yazı boyutu"
+            value={fontSize}
+            onChange={(e) => {
+              const val = e.target.value as "small" | "standard" | "large";
+              setFontSize(val);
+              try {
+                localStorage.setItem("note_font_size", val);
+              } catch {}
+            }}
+          >
+            {FONT_SIZES.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
           <div className="tool-group">
             {tool("Kalın", Bold, () => exec("bold"), active.bold)}
             {tool("İtalik", Italic, () => exec("italic"), active.italic)}
@@ -596,7 +627,9 @@ export default function NoteEditor({
               </div>
             </div>
           )}
-          <div ref={bodyRef} className="editor-body" contentEditable={!isTrash} suppressContentEditableWarning role="textbox"
+          <div ref={bodyRef} className={`editor-body font-size-${fontSize}`} style={{
+            fontSize: fontSize === "small" ? "0.875rem" : fontSize === "large" ? "1.175rem" : "1rem",
+          }} contentEditable={!isTrash} suppressContentEditableWarning role="textbox"
             aria-multiline="true" aria-label="Not içeriği" data-placeholder={isTrash ? "" : "Yazmaya başla…"}
             onInput={isTrash ? undefined : commit} onClick={isTrash ? undefined : onBodyClick} onKeyDown={isTrash ? undefined : onBodyKeyDown} onPaste={isTrash ? undefined : onPaste} />
         </article>
