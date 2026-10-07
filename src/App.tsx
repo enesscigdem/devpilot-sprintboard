@@ -21,7 +21,7 @@ interface ToastNotification {
 
 function ToastItem({ toast, onDismiss }: { toast: ToastNotification; onDismiss: (id: string) => void }) {
   const [isPaused, setIsPaused] = useState(false);
-  const remainingRef = useRef(toast.duration ?? 4500);
+  const remainingRef = useRef(toast.duration ?? 3500);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = useRef(Date.now());
 
@@ -182,14 +182,16 @@ export default function App() {
     return first?.id ?? null;
   });
   const [mobilePane, setMobilePane] = useState<"list" | "editor">("list");
-  const [deletedNote, setDeletedNote] = useState<Note | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [importStatus, setImportStatus] = useState<{ message: string; isError?: boolean } | null>(null);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [isConfirmTrashOpen, setIsConfirmTrashOpen] = useState(false);
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const removeToast = (id: string) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  const showToast = (toast: Omit<ToastNotification, "id">) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { ...toast, id, duration: toast.duration ?? 3500 }]);
+    return id;
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -202,8 +204,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
-    saveNotes(persisted);
+    try {
+      const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
+      saveNotes(persisted);
+    } catch {
+      showToast({
+        type: "error",
+        title: "Kaydetme hatası",
+        description: "Notlar kaydedilirken bir hata oluştu.",
+      });
+    }
   }, [notes]);
 
   useEffect(() => {
@@ -234,7 +244,6 @@ export default function App() {
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     };
   }, []);
 
@@ -260,12 +269,14 @@ export default function App() {
     setNotes((prev) => restoreNote(prev, id));
     setCurrentView("notes");
     setSelectedId(id);
+    showToast({ type: "success", title: "Not geri yüklendi" });
   };
 
   const handlePermanentDelete = (id: string) => {
     if (window.confirm("Bu notu kalıcı olarak silmek istediğinize emin misiniz?")) {
       setNotes((prev) => permanentlyDeleteNote(prev, id));
       setSelectedId(null);
+      showToast({ type: "info", title: "Not kalıcı olarak silindi" });
     }
   };
 
@@ -277,6 +288,7 @@ export default function App() {
     setNotes((prev) => emptyTrash(prev));
     setSelectedId(null);
     setIsConfirmTrashOpen(false);
+    showToast({ type: "info", title: "Çöp kutusu boşaltıldı" });
   };
 
   const patchNote = (id: string, patch: Partial<Note>) => {
@@ -294,25 +306,24 @@ export default function App() {
   };
 
   const togglePin = (id: string) => {
+    const target = notes.find((n) => n.id === id) || (draft && draft.id === id ? draft : null);
+    const willPin = target ? !target.pinned : false;
     if (draft && draft.id === id) {
       setDraft((prev) => (prev ? { ...prev, pinned: !prev.pinned } : null));
-      return;
+    } else {
+      setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n)));
     }
-    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n)));
+    showToast({
+      type: "info",
+      title: willPin ? "Not sabitlendi" : "Sabitleme kaldırıldı",
+    });
   };
 
   const deleteNote = (id: string) => {
     const target = notes.find((n) => n.id === id) || (draft && draft.id === id ? draft : null);
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-
     const isNonEmpty = target && (target.title.trim() || htmlToText(target.html));
     if (isNonEmpty && target) {
-      const trashed = { ...target, deletedAt: Date.now() };
-      setDeletedNote(trashed);
-      undoTimerRef.current = setTimeout(() => {
-        setDeletedNote(null);
-      }, 5000);
-
+      const trashed: Note = { ...target, deletedAt: Date.now() };
       setDraft(null);
       setNotes((prev) => {
         const exists = prev.some((n) => n.id === id);
@@ -321,8 +332,23 @@ export default function App() {
         }
         return [trashed, ...prev];
       });
+      showToast({
+        type: "info",
+        title: "Not çöpe taşındı",
+        duration: 4000,
+        action: {
+          label: "Geri Al",
+          onClick: () => {
+            setDraft(null);
+            const restored: Note = { ...trashed, deletedAt: undefined };
+            setNotes((prev) => [restored, ...prev.filter((n) => n.id !== trashed.id)]);
+            setSelectedId(trashed.id);
+            setMobilePane("editor");
+            showToast({ type: "success", title: "Not geri yüklendi" });
+          },
+        },
+      });
     } else {
-      setDeletedNote(null);
       if (draft && draft.id === id) {
         setDraft(null);
       }
@@ -334,17 +360,6 @@ export default function App() {
       .sort((a, b) => b.updatedAt - a.updatedAt)[0];
     setSelectedId(next?.id ?? null);
     if (!next) setMobilePane("list");
-  };
-
-  const handleUndo = () => {
-    if (!deletedNote) return;
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    setDraft(null);
-    const restored: Note = { ...deletedNote, deletedAt: undefined };
-    setNotes((prev) => [restored, ...prev.filter((n) => n.id !== deletedNote.id)]);
-    setSelectedId(deletedNote.id);
-    setMobilePane("editor");
-    setDeletedNote(null);
   };
 
   const downloadFile = (content: string, filename: string, mimeType: string) => {
@@ -360,9 +375,14 @@ export default function App() {
   };
 
   const exportAllJson = () => {
-    const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
-    const json = notesToJson(persisted.length > 0 ? persisted : notes);
-    downloadFile(json, "notlar.json", "application/json;charset=utf-8");
+    try {
+      const persisted = notes.filter((n) => n.title.trim() || htmlToText(n.html));
+      const json = notesToJson(persisted.length > 0 ? persisted : notes);
+      downloadFile(json, "notlar.json", "application/json;charset=utf-8");
+      showToast({ type: "success", title: "Notlar JSON olarak dışa aktarıldı" });
+    } catch {
+      showToast({ type: "error", title: "Dışa aktarma başarısız oldu" });
+    }
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -375,17 +395,19 @@ export default function App() {
         const content = event.target?.result as string;
         const result = importNotesFromJson(content, notes);
         setNotes(result.notes);
-        setImportStatus({
-          message: `${result.importedCount} not eklendi, ${result.skippedCount} not atlandı.`,
-          isError: false,
+        showToast({
+          type: "success",
+          title: "İçe aktarma tamamlandı",
+          description: `${result.importedCount} not eklendi, ${result.skippedCount} not atlandı.`,
         });
         if (result.importedCount > 0 && result.notes[0] && !result.notes[0].deletedAt) {
           setSelectedId(result.notes[0].id);
         }
       } catch (err) {
-        setImportStatus({
-          message: err instanceof Error ? err.message : "Notlar içe aktarılırken hata oluştu.",
-          isError: true,
+        showToast({
+          type: "error",
+          title: "İçe aktarma hatası",
+          description: err instanceof Error ? err.message : "Notlar içe aktarılırken hata oluştu.",
         });
       } finally {
         if (fileInputRef.current) {
@@ -394,9 +416,10 @@ export default function App() {
       }
     };
     reader.onerror = () => {
-      setImportStatus({
-        message: "Dosya okunamadı. Lütfen geçerli bir dosya seçin.",
-        isError: true,
+      showToast({
+        type: "error",
+        title: "Dosya okunamadı",
+        description: "Lütfen geçerli bir dosya seçin.",
       });
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -407,9 +430,14 @@ export default function App() {
 
   const exportSelectedMarkdown = () => {
     if (!selected) return;
-    const md = noteToMarkdown(selected);
-    const filename = `${sanitizeFilename(selected.title || "not")}.md`;
-    downloadFile(md, filename, "text/markdown;charset=utf-8");
+    try {
+      const md = noteToMarkdown(selected);
+      const filename = `${sanitizeFilename(selected.title || "not")}.md`;
+      downloadFile(md, filename, "text/markdown;charset=utf-8");
+      showToast({ type: "success", title: "Not Markdown olarak dışa aktarıldı" });
+    } catch {
+      showToast({ type: "error", title: "Dışa aktarma başarısız oldu" });
+    }
   };
 
   const needle = query.trim().toLocaleLowerCase("tr");
@@ -752,6 +780,13 @@ export default function App() {
                   deleteNote(selected.id);
                 }
               }}
+              onToast={(msg) => {
+                const isWarning = msg.includes("geçerli") || msg.includes("uzun") || msg.includes("içeremez") || msg.includes("zaten") || msg.includes("hata");
+                showToast({
+                  type: isWarning ? "warning" : "success",
+                  title: msg,
+                });
+              }}
             />
           </>
         ) : (
@@ -776,23 +811,7 @@ export default function App() {
         )}
       </main>
 
-      {deletedNote && (
-        <div className="undo-toast" role="status">
-          <span>Not silindi</span>
-          <button type="button" className="undo-button" onClick={handleUndo}>
-            Geri Al
-          </button>
-        </div>
-      )}
 
-      {importStatus && (
-        <div className="undo-toast" role="status">
-          <span>{importStatus.message}</span>
-          <button type="button" className="undo-button" onClick={() => setImportStatus(null)}>
-            Kapat
-          </button>
-        </div>
-      )}
 
       {showShortcuts && (
         <div className="shortcuts-backdrop" onClick={() => setShowShortcuts(false)}>

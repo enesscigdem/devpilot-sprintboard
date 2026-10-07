@@ -14,6 +14,7 @@ type Props = {
   onDelete: () => void;
   allTags?: TagSuggestion[] | Record<string, number>;
   suggestions?: TagSuggestion[] | Record<string, number>;
+  onToast?: (message: string) => void;
 };
 
 type Active = Record<string, boolean>;
@@ -27,7 +28,7 @@ const BLOCKS = [
 
 const run = (command: string, value?: string) => document.execCommand(command, false, value);
 
-export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allTags, suggestions }: Props) {
+export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allTags, suggestions, onToast }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const [active, setActive] = useState<Active>({});
@@ -203,30 +204,42 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
   const handleAddTag = (rawTag: string) => {
     const trimmed = rawTag.trim().replace(/^#+/, "").trim();
     if (!trimmed) {
-      setTagError("Lütfen geçerli bir etiket girin.");
+      const msg = "Lütfen geçerli bir etiket girin.";
+      setTagError(msg);
+      onToast?.(msg);
       return;
     }
     if (trimmed.length > MAX_TAG_LENGTH) {
-      setTagError(`Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`);
+      const msg = `Etiket çok uzun (en fazla ${MAX_TAG_LENGTH} karakter).`;
+      setTagError(msg);
+      onToast?.(msg);
       return;
     }
     if (/[\s,]/.test(trimmed)) {
-      setTagError("Etiket boşluk veya virgül içeremez.");
+      const msg = "Etiket boşluk veya virgül içeremez.";
+      setTagError(msg);
+      onToast?.(msg);
       return;
     }
     if (currentTags.includes(trimmed)) {
-      setTagError("Bu etiket zaten eklenmiş.");
+      const msg = "Bu etiket zaten eklenmiş.";
+      setTagError(msg);
+      onToast?.(msg);
       return;
     }
     setTagError(null);
-    setAnnounce(`"${trimmed}" etiketi eklendi`);
+    const msg = `"${trimmed}" etiketi eklendi`;
+    setAnnounce(msg);
+    onToast?.(msg);
     onChange({ tags: [...currentTags, trimmed] });
     setTagInput("");
     setShowSuggestions(false);
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setAnnounce(`"${tagToRemove}" etiketi kaldırıldı`);
+    const msg = `"${tagToRemove}" etiketi kaldırıldı`;
+    setAnnounce(msg);
+    onToast?.(msg);
     onChange({ tags: currentTags.filter((t) => t !== tagToRemove) });
     setTagError(null);
   };
