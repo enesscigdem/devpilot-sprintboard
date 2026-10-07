@@ -7,6 +7,8 @@ import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes"
 
 type TagSuggestion = { name: string; count?: number } | string;
 
+export type FontSize = "small" | "standard" | "large";
+
 type Props = {
   note: Note;
   onChange: (patch: { title?: string; html?: string; tags?: string[] }) => void;
@@ -18,6 +20,8 @@ type Props = {
   allTags?: TagSuggestion[] | Record<string, number>;
   suggestions?: TagSuggestion[] | Record<string, number>;
   onToast?: (message: string) => void;
+  fontSize?: FontSize;
+  onFontSizeChange?: (size: FontSize) => void;
 };
 
 type Active = Record<string, boolean>;
@@ -42,12 +46,26 @@ export default function NoteEditor({
   allTags,
   suggestions,
   onToast,
+  fontSize: propFontSize,
+  onFontSizeChange,
 }: Props) {
   const isTrash = propIsTrash ?? Boolean(note.deletedAt);
   const bodyRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const [active, setActive] = useState<Active>({});
   const [block, setBlock] = useState("P");
+  const [localFontSize, setLocalFontSize] = useState<FontSize>(() => {
+    return (localStorage.getItem("note_font_size") as FontSize) || "standard";
+  });
+  const currentFontSize = propFontSize ?? localFontSize;
+
+  const handleFontSizeChange = (size: FontSize) => {
+    setLocalFontSize(size);
+    try {
+      localStorage.setItem("note_font_size", size);
+    } catch {}
+    onFontSizeChange?.(size);
+  };
   const [words, setWords] = useState(() => wordCount(note.html));
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
@@ -292,6 +310,12 @@ export default function NoteEditor({
             onChange={(e) => exec("formatBlock", e.target.value)}>
             {BLOCKS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
           </select>
+          <select className="block-select font-size-select" aria-label="Yazı boyutu" value={currentFontSize}
+            onChange={(e) => handleFontSizeChange(e.target.value as FontSize)}>
+            <option value="small">Küçük</option>
+            <option value="standard">Standart</option>
+            <option value="large">Büyük</option>
+          </select>
           <div className="tool-group">
             {tool("Kalın", Bold, () => exec("bold"), active.bold)}
             {tool("İtalik", Italic, () => exec("italic"), active.italic)}
@@ -318,7 +342,7 @@ export default function NoteEditor({
       )}
 
       <div className="editor-scroll">
-        <article className="editor-page">
+        <article className={`editor-page font-size-${currentFontSize}`} data-font-size={currentFontSize}>
           <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
             {formatFullDate(note.updatedAt)}
           </time>

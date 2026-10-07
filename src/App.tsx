@@ -1,7 +1,7 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
-import NoteEditor from "./components/NoteEditor";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Laptop, Maximize2, Minimize2, Moon, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
+import NoteEditor, { type FontSize } from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
   createNote, emptyTrash, formatListDate, formatDueDate, getNoteTitle, getTrashNotes, isOverdue, groupNotes, htmlToText, importNotesFromJson, loadNotes, matchNote, noteToMarkdown, notesToJson, parseSearchQuery, permanentlyDeleteNote, restoreNote, sanitizeFilename, saveNotes, sortNotes, NOTE_SORT_KEY, type Note, type NoteSortOption,
@@ -207,12 +207,14 @@ function preview(note: Note, query: string = ""): string {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
     const saved = localStorage.getItem("theme");
-    if (saved === "light" || saved === "dark") return saved;
-    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    if (saved === "light" || saved === "dark" || saved === "system") return saved;
+    return "system";
+  });
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [fontSize, setFontSize] = useState<FontSize>(() => {
+    return (localStorage.getItem("note_font_size") as FontSize) || "standard";
   });
   const [notes, setNotes] = useState<Note[]>(loadNotes);
   const [draft, setDraft] = useState<Note | null>(null);
@@ -248,12 +250,31 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    const updateTheme = () => {
+      const resolved =
+        theme === "system"
+          ? (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+          : theme;
+      document.documentElement.setAttribute("data-theme", resolved);
+    };
+
+    updateTheme();
     localStorage.setItem("theme", theme);
+
+    if (theme === "system" && typeof window !== "undefined" && window.matchMedia) {
+      const mql = window.matchMedia("(prefers-color-scheme: dark)");
+      const handler = () => updateTheme();
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    setTheme((prev) => {
+      if (prev === "light") return "dark";
+      if (prev === "dark") return "system";
+      return "light";
+    });
   };
 
   useEffect(() => {
@@ -276,6 +297,7 @@ export default function App() {
 
       if (event.key === "Escape") {
         setShowShortcuts(false);
+        if (isFocusMode) setIsFocusMode(false);
       }
 
       if (event.key === "?" && !isEditable) {
@@ -577,7 +599,7 @@ export default function App() {
   const realCount = notes.filter((n) => !n.deletedAt && !isEmpty(n)).length;
 
   return (
-    <div className="app" data-pane={mobilePane}>
+    <div className={`app ${isFocusMode ? "focus-mode" : ""}`} data-focus-mode={isFocusMode ? "true" : "false"} data-pane={mobilePane}>
       <aside className="sidebar" aria-label="Notlar">
         <div className="sidebar-tabs" role="tablist" style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "8px 10px 0", gap: "4px" }}>
           <button
@@ -683,11 +705,20 @@ export default function App() {
             <button
               type="button"
               className="icon-button"
-              aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
-              title={theme === "dark" ? "Açık tema" : "Koyu tema"}
+              aria-label={theme === "dark" ? "Koyu tema" : theme === "light" ? "Açık tema" : "Sistem teması"}
+              title={theme === "dark" ? "Koyu tema (Sistem için tıkla)" : theme === "light" ? "Açık tema (Koyu için tıkla)" : "Sistem teması (Açık için tıkla)"}
               onClick={toggleTheme}
             >
-              {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+              {theme === "dark" ? <Moon size={19} /> : theme === "light" ? <Sun size={19} /> : <Laptop size={19} />}
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+              title={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+              onClick={() => setIsFocusMode((prev) => !prev)}
+            >
+              {isFocusMode ? <Minimize2 size={19} /> : <Maximize2 size={19} />}
             </button>
             {currentView === "notes" && (
               <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
@@ -888,6 +919,18 @@ export default function App() {
       </aside>
 
       <main className="detail">
+        {isFocusMode && (
+          <button
+            type="button"
+            className="icon-button"
+            style={{ position: "fixed", top: "12px", right: "16px", zIndex: 50, background: "var(--hover)" }}
+            aria-label="Odak modundan çık"
+            title="Odak modundan çık"
+            onClick={() => setIsFocusMode(false)}
+          >
+            <Minimize2 size={19} />
+          </button>
+        )}
         {selected ? (
           <>
             <button type="button" className="back-button" onClick={() => {
@@ -903,6 +946,13 @@ export default function App() {
             <NoteEditor
               key={selected.id}
               note={selected}
+              fontSize={fontSize}
+              onFontSizeChange={(size) => {
+                setFontSize(size);
+                try {
+                  localStorage.setItem("note_font_size", size);
+                } catch {}
+              }}
               isTrash={Boolean(selected.deletedAt)}
               onRestore={() => handleRestore(selected.id)}
               onPermanentDelete={() => handlePermanentDelete(selected.id)}
