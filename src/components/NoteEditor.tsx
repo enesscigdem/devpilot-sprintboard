@@ -278,17 +278,25 @@ export default function NoteEditor({ note, onChange, onTogglePin, onDelete, allT
         <div className="tool-spacer" />
         <div className="tool-group">
           {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin, note.pinned)}
-          {confirmDelete ? (
-            <span className="confirm-delete">
-              <button type="button" className="danger-text" onClick={onDelete}>Sil</button>
-              <button type="button" className="quiet-text" onClick={() => setConfirmDelete(false)}>Vazgeç</button>
-            </span>
-          ) : tool("Notu sil", Trash2, () => setConfirmDelete(true))}
+          {tool("Notu sil", Trash2, () => setConfirmDelete((v) => !v), confirmDelete)}
         </div>
       </div>
 
       <div className="editor-scroll">
         <article className="editor-page">
+          {confirmDelete && (
+            <div className="delete-confirm-box" role="alert">
+              <p className="delete-confirm-text">Bu not çöp kutusuna taşınacak.</p>
+              <div className="delete-confirm-actions">
+                <button type="button" className="delete-confirm-btn delete-btn-danger" onClick={onDelete}>
+                  Sil
+                </button>
+                <button type="button" className="delete-confirm-btn delete-btn-cancel" onClick={() => setConfirmDelete(false)}>
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          )}
           <time className="editor-date" dateTime={new Date(note.updatedAt).toISOString()}>
             {formatFullDate(note.updatedAt)}
           </time>
