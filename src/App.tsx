@@ -895,6 +895,7 @@ export default function App() {
               key={selected.id}
               note={selected}
               isTrash={Boolean(selected.deletedAt)}
+              allTags={allTags}
               onRestore={() => handleRestore(selected.id)}
               onPermanentDelete={() => handlePermanentDelete(selected.id)}
               onChange={(patch) => {

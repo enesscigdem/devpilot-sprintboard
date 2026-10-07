@@ -76,6 +76,96 @@ export const wordCount = (html: string) => {
   return text ? text.split(" ").length : 0;
 };
 
+export type NoteTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  title: string;
+  html: string;
+};
+
+export const NOTE_TEMPLATES: NoteTemplate[] = [
+  {
+    id: "meeting",
+    name: "Toplantı Notu",
+    description: "Katılımcılar, gündem maddeleri ve aksiyon kararları",
+    title: "Toplantı Notu: ",
+    html: sanitizeHtml(`
+      <h2>📅 Toplantı Detayları</h2>
+      <p><strong>Tarih:</strong> </p>
+      <p><strong>Katılımcılar:</strong> </p>
+      <hr>
+      <h2>🎯 Gündem</h2>
+      <ul>
+        <li>Madde 1</li>
+        <li>Madde 2</li>
+      </ul>
+      <h2>📝 Tartışma & Notlar</h2>
+      <p></p>
+      <h2>✅ Aksiyon Maddeleri</h2>
+      <ul data-checklist>
+        <li>Sorumlu: Görev tanımı</li>
+      </ul>
+    `),
+  },
+  {
+    id: "daily-planner",
+    name: "Günlük Plan",
+    description: "Öncelikli hedefler, yapılacaklar ve gün sonu değerlendirmesi",
+    title: "Günlük Plan - ",
+    html: sanitizeHtml(`
+      <h2>🌟 Günün Öncelikli Hedefleri</h2>
+      <ol>
+        <li>1. Öncelikli hedef</li>
+        <li>2. Öncelikli hedef</li>
+      </ol>
+      <hr>
+      <h2>📋 Yapılacaklar</h2>
+      <ul data-checklist>
+        <li>Görev 1</li>
+        <li>Görev 2</li>
+        <li>Görev 3</li>
+      </ul>
+      <h2>💡 Gün Sonu Değerlendirmesi & Notlar</h2>
+      <p></p>
+    `),
+  },
+  {
+    id: "checklist",
+    name: "Kontrol Listesi",
+    description: "Adım adım takip edilecek görev ve kontrol listesi",
+    title: "Kontrol Listesi",
+    html: sanitizeHtml(`
+      <h2>✅ Kontrol Listesi</h2>
+      <ul data-checklist>
+        <li>İlk kontrol maddesi</li>
+        <li>İkinci kontrol maddesi</li>
+        <li>Üçüncü kontrol maddesi</li>
+      </ul>
+    `),
+  },
+  {
+    id: "project-brief",
+    name: "Proje Taslağı",
+    description: "Hedefler, kapsam, kilometre taşları ve teslim edilecekler",
+    title: "Proje: ",
+    html: sanitizeHtml(`
+      <h2>🎯 Proje Amacı & Kapsam</h2>
+      <p></p>
+      <h2>🚩 Kilometre Taşları</h2>
+      <ul>
+        <li>Aşama 1: </li>
+        <li>Aşama 2: </li>
+      </ul>
+      <h2>📦 Teslim Edilecekler</h2>
+      <ul data-checklist>
+        <li>Teslimat 1</li>
+        <li>Teslimat 2</li>
+      </ul>
+    `),
+  },
+];
+
 export const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
