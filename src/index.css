@@ -840,3 +840,41 @@ mark,
   background-color: var(--hover);
   outline: none;
 }
+
+.trash-view .sidebar-header,
+[data-view="trash"] .sidebar-header,
+.trash-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.trash-view .sidebar-header h1,
+.trash-view .sidebar-header h2,
+[data-view="trash"] .sidebar-header h1,
+[data-view="trash"] .sidebar-header h2,
+.trash-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trash-view .sidebar-header .sidebar-actions,
+[data-view="trash"] .sidebar-header .sidebar-actions,
+.trash-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.trash-view [data-action="empty-trash"],
+[data-view="trash"] [data-action="empty-trash"],
+.empty-trash-button,
+.trash-empty-button {
+  min-height: 44px;
+}
