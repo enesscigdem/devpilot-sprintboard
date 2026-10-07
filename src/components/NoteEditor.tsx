@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListChecks, Quote, Code, Link2, Minus,
-  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw,
+  Pin, PinOff, Trash2, Undo2, Redo2, X, RotateCcw, LayoutTemplate,
 } from "lucide-react";
-import { formatFullDate, sanitizeHtml, wordCount, type Note } from "@/lib/notes";
+import { formatFullDate, sanitizeHtml, wordCount, type Note, NOTE_TEMPLATES } from "@/lib/notes";
 
 type TagSuggestion = { name: string; count?: number } | string;
 
@@ -27,6 +27,30 @@ const BLOCKS = [
   { value: "H1", label: "Başlık" },
   { value: "H2", label: "Alt başlık" },
   { value: "H3", label: "Küçük başlık" },
+];
+
+const FALLBACK_TEMPLATES = [
+  {
+    id: "meeting",
+    name: "Toplantı Notu",
+    description: "Gündem, katılımcılar, kararlar ve aksiyonlar",
+    title: "Toplantı Notu",
+    html: "<h2>Gündem</h2><ul><li></li></ul><h2>Katılımcılar</h2><ul><li></li></ul><h2>Alınan Kararlar</h2><ul><li></li></ul><h2>Aksiyon Maddeleri</h2><ul data-checklist=\"\"><li></li></ul>",
+  },
+  {
+    id: "daily",
+    name: "Günlük Plan",
+    description: "Öncelikler, yapılacaklar listesi ve notlar",
+    title: "Günlük Plan",
+    html: "<h2>Öncelikli Hedefler</h2><ul data-checklist=\"\"><li></li></ul><h2>Yapılacaklar</h2><ul data-checklist=\"\"><li></li></ul><h2>Günün Notları</h2><p></p>",
+  },
+  {
+    id: "checklist",
+    name: "Kontrol Listesi",
+    description: "Hızlı yapılacaklar ve görev takibi",
+    title: "Kontrol Listesi",
+    html: "<ul data-checklist=\"\"><li>Madde 1</li><li>Madde 2</li><li>Madde 3</li></ul>",
+  },
 ];
 
 const run = (command: string, value?: string) => document.execCommand(command, false, value);
@@ -53,6 +77,10 @@ export default function NoteEditor({
   const [tagError, setTagError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [announce, setAnnounce] = useState("");
+  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
+  const templateMenuRef = useRef<HTMLDivElement>(null);
+
+  const templates = NOTE_TEMPLATES && NOTE_TEMPLATES.length > 0 ? NOTE_TEMPLATES : FALLBACK_TEMPLATES;
 
   const currentTags = useMemo(() => note.tags ?? [], [note.tags]);
 
@@ -123,6 +151,36 @@ export default function NoteEditor({
     document.addEventListener("selectionchange", refreshState);
     return () => document.removeEventListener("selectionchange", refreshState);
   }, [refreshState]);
+
+  useEffect(() => {
+    if (!showTemplateMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (templateMenuRef.current && !templateMenuRef.current.contains(e.target as Node)) {
+        setShowTemplateMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showTemplateMenu]);
+
+  const handleApplyTemplate = (tpl: { title?: string; html: string; name?: string }) => {
+    const newTitle = (!note.title.trim() || note.title === "Başlıksız Not") && tpl.title ? tpl.title : (note.title || tpl.title || "");
+    const newHtml = sanitizeHtml(tpl.html);
+
+    if (bodyRef.current) {
+      bodyRef.current.innerHTML = newHtml;
+    }
+    if (titleRef.current && newTitle) {
+      titleRef.current.value = newTitle;
+    }
+
+    setWords(wordCount(newHtml));
+    onChange({ title: newTitle, html: newHtml });
+    onToast?.(`"${tpl.name || tpl.title || 'Şablon'}" şablonu uygulandı`);
+    bodyRef.current?.focus();
+  };
+
+  const isEditorEmpty = !isTrash && !note.title.trim() && !note.html.replace(/<[^>]*>/g, "").trim();
 
   const commit = () => {
     const html = sanitizeHtml(bodyRef.current?.innerHTML ?? "");
@@ -309,6 +367,69 @@ export default function NoteEditor({
             {tool("Bağlantı", Link2, addLink, active.link)}
             {tool("Ayırıcı çizgi", Minus, () => exec("insertHorizontalRule"))}
           </div>
+          <div className="tool-group" ref={templateMenuRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="tool"
+              aria-label="Hazır Şablonlar"
+              title="Hazır Şablonlar"
+              aria-expanded={showTemplateMenu}
+              onClick={() => setShowTemplateMenu((v) => !v)}
+            >
+              <LayoutTemplate size={17} strokeWidth={2} />
+            </button>
+            {showTemplateMenu && (
+              <div
+                className="template-dropdown"
+                role="menu"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  marginTop: "4px",
+                  background: "var(--color-bg-elevated, #fff)",
+                  border: "1px solid var(--color-border, #e5e7eb)",
+                  borderRadius: "8px",
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                  zIndex: 50,
+                  minWidth: "200px",
+                  padding: "4px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                }}
+              >
+                {templates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className="template-dropdown-item"
+                    role="menuitem"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      color: "inherit",
+                      width: "100%",
+                    }}
+                    onClick={() => {
+                      handleApplyTemplate(tpl);
+                      setShowTemplateMenu(false);
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "13px" }}>{tpl.name}</span>
+                    <span style={{ fontSize: "11px", opacity: 0.7 }}>{tpl.description}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="tool-spacer" />
           <div className="tool-group">
             {tool(note.pinned ? "Sabitlemeyi kaldır" : "Notu sabitle", note.pinned ? PinOff : Pin, onTogglePin, note.pinned)}
@@ -433,6 +554,48 @@ export default function NoteEditor({
               </div>
             )}
           </div>
+          {isEditorEmpty && (
+            <div
+              className="editor-templates-prompt"
+              style={{
+                margin: "12px 0 16px 0",
+                padding: "12px 14px",
+                borderRadius: "8px",
+                border: "1px dashed var(--color-border, #e5e7eb)",
+                background: "var(--color-bg-subtle, rgba(0,0,0,0.02))",
+              }}
+            >
+              <div style={{ fontSize: "12px", fontWeight: 600, marginBottom: "8px", color: "var(--color-text-muted, #6b7280)" }}>
+                Hazır Şablon ile Başla:
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {templates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className="template-prompt-btn"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      border: "1px solid var(--color-border, #e5e7eb)",
+                      background: "var(--color-bg, #ffffff)",
+                      cursor: "pointer",
+                      color: "inherit",
+                    }}
+                    onClick={() => handleApplyTemplate(tpl)}
+                  >
+                    <LayoutTemplate size={14} />
+                    <span>{tpl.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div ref={bodyRef} className="editor-body" contentEditable={!isTrash} suppressContentEditableWarning role="textbox"
             aria-multiline="true" aria-label="Not içeriği" data-placeholder={isTrash ? "" : "Yazmaya başla…"}
             onInput={isTrash ? undefined : commit} onClick={isTrash ? undefined : onBodyClick} onKeyDown={isTrash ? undefined : onBodyKeyDown} onPaste={isTrash ? undefined : onPaste} />
