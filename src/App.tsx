@@ -1,6 +1,6 @@
 import "./index.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, RotateCcw, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, ChevronLeft, Download, FileDown, Info, Moon, Pin, Search, SquarePen, StickyNote, Sun, Trash2, Upload, X } from "lucide-react";
 import NoteEditor from "./components/NoteEditor";
 import ConfirmDialog from "./components/ConfirmDialog";
 import {
@@ -187,6 +187,7 @@ export default function App() {
   const [importStatus, setImportStatus] = useState<{ message: string; isError?: boolean } | null>(null);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [isConfirmTrashOpen, setIsConfirmTrashOpen] = useState(false);
+  const [noteToDeletePermanently, setNoteToDeletePermanently] = useState<string | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const removeToast = (id: string) => setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -263,9 +264,14 @@ export default function App() {
   };
 
   const handlePermanentDelete = (id: string) => {
-    if (window.confirm("Bu notu kalıcı olarak silmek istediğinize emin misiniz?")) {
-      setNotes((prev) => permanentlyDeleteNote(prev, id));
+    setNoteToDeletePermanently(id);
+  };
+
+  const handleConfirmPermanentDelete = () => {
+    if (noteToDeletePermanently) {
+      setNotes((prev) => permanentlyDeleteNote(prev, noteToDeletePermanently));
       setSelectedId(null);
+      setNoteToDeletePermanently(null);
     }
   };
 
@@ -488,6 +494,56 @@ export default function App() {
   return (
     <div className="app" data-pane={mobilePane}>
       <aside className="sidebar" aria-label="Notlar">
+        <div className="sidebar-tabs" role="tablist" style={{ display: "flex", gap: "6px", padding: "12px 12px 0" }}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentView === "notes"}
+            className={`sidebar-tab ${currentView === "notes" ? "active" : ""}`}
+            style={{
+              flex: 1,
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              fontSize: "13px",
+              fontWeight: 500,
+              cursor: "pointer",
+              background: currentView === "notes" ? "var(--hover, rgba(0,0,0,0.08))" : "transparent",
+              color: currentView === "notes" ? "var(--text)" : "var(--muted)",
+            }}
+            onClick={() => {
+              setCurrentView("notes");
+              setDraft(null);
+              setSelectedId(null);
+            }}
+          >
+            Notlar
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentView === "trash"}
+            className={`sidebar-tab ${currentView === "trash" ? "active" : ""}`}
+            style={{
+              flex: 1,
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              fontSize: "13px",
+              fontWeight: 500,
+              cursor: "pointer",
+              background: currentView === "trash" ? "var(--hover, rgba(0,0,0,0.08))" : "transparent",
+              color: currentView === "trash" ? "var(--text)" : "var(--muted)",
+            }}
+            onClick={() => {
+              setCurrentView("trash");
+              setDraft(null);
+              setSelectedId(null);
+            }}
+          >
+            Çöp Kutusu
+          </button>
+        </div>
         <header className="sidebar-header" style={{ flexWrap: "nowrap", minWidth: 0 }}>
           <div className="sidebar-title" style={{ minWidth: 0, flexShrink: 0, whiteSpace: "nowrap" }}>
             <h1 style={{ whiteSpace: "nowrap" }}>{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}</h1>
@@ -592,20 +648,7 @@ export default function App() {
             ))}
           </div>
         )}
-        <button
-          type="button"
-          className={`trash-nav ${currentView === "trash" ? "active" : ""}`}
-          aria-current={currentView === "trash" ? "true" : undefined}
-          onClick={() => {
-            setCurrentView((prev) => (prev === "trash" ? "notes" : "trash"));
-            setDraft(null);
-            setSelectedId(null);
-          }}
-        >
-          <Trash2 size={16} />
-          <span>Çöp Kutusu</span>
-          {trashNotes.length > 0 && <span className="trash-nav-badge">{trashNotes.length}</span>}
-        </button>
+
         {currentView === "trash" && trashNotes.length > 0 && (
           <div style={{ padding: "0 10px 8px", display: "flex", justifyContent: "flex-end" }}>
             <button
@@ -723,22 +766,12 @@ export default function App() {
             }}>
               <ChevronLeft size={20} />{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}
             </button>
-            {selected.deletedAt && (
-              <div className="trash-banner">
-                <p>Bu not çöp kutusunda.</p>
-                <div className="trash-actions">
-                  <button type="button" className="secondary-button" onClick={() => handleRestore(selected.id)}>
-                    <RotateCcw size={14} />Geri Yükle
-                  </button>
-                  <button type="button" className="danger-button" onClick={() => handlePermanentDelete(selected.id)}>
-                    <Trash2 size={14} />Kalıcı Olarak Sil
-                  </button>
-                </div>
-              </div>
-            )}
             <NoteEditor
               key={selected.id}
               note={selected}
+              isTrash={Boolean(selected.deletedAt)}
+              onRestore={() => handleRestore(selected.id)}
+              onPermanentDelete={() => handlePermanentDelete(selected.id)}
               onChange={(patch) => {
                 if (!selected.deletedAt) patchNote(selected.id, patch);
               }}
@@ -848,6 +881,16 @@ export default function App() {
         cancelText="İptal"
         onConfirm={handleConfirmEmptyTrash}
         onClose={() => setIsConfirmTrashOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(noteToDeletePermanently)}
+        title="Notu Kalıcı Olarak Sil"
+        message="Bu not kalıcı olarak silinecektir. Bu işlem geri alınamaz. Emin misiniz?"
+        confirmText="Kalıcı Olarak Sil"
+        cancelText="İptal"
+        onConfirm={handleConfirmPermanentDelete}
+        onClose={() => setNoteToDeletePermanently(null)}
       />
 
       <aside className="toast-container" aria-label="Bildirimler" aria-live="polite">
