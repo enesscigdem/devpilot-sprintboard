@@ -18,6 +18,10 @@ type Props = {
   allTags?: TagSuggestion[] | Record<string, number>;
   suggestions?: TagSuggestion[] | Record<string, number>;
   onToast?: (message: string) => void;
+  allNotes?: Note[];
+  notes?: Note[];
+  onSelectNote?: (noteId: string) => void;
+  onNavigateNote?: (noteId: string) => void;
 };
 
 type Active = Record<string, boolean>;
@@ -596,7 +600,7 @@ export default function NoteEditor({
               </div>
             </div>
           )}
-          <div ref={bodyRef} className="editor-body" contentEditable={!isTrash} suppressContentEditableWarning role="textbox"
+                  <div ref={bodyRef} className="editor-body" contentEditable={!isTrash} suppressContentEditableWarning role="textbox"
             aria-multiline="true" aria-label="Not içeriği" data-placeholder={isTrash ? "" : "Yazmaya başla…"}
             onInput={isTrash ? undefined : commit} onClick={isTrash ? undefined : onBodyClick} onKeyDown={isTrash ? undefined : onBodyKeyDown} onPaste={isTrash ? undefined : onPaste} />
         </article>

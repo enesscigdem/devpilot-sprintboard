@@ -46,11 +46,18 @@ export function sanitizeHtml(input: string): string {
       }
       const copy = document.createElement(el.tagName);
       if (el.tagName === "A") {
-        const href = el.getAttribute("href") ?? "";
-        if (/^(https?:|mailto:)/i.test(href)) {
-          copy.setAttribute("href", href);
-          copy.setAttribute("target", "_blank");
-          copy.setAttribute("rel", "noopener noreferrer");
+        const noteId = el.getAttribute("data-note-id");
+        if (noteId) {
+          copy.setAttribute("data-note-id", noteId);
+          copy.setAttribute("href", `#note-${noteId}`);
+          copy.setAttribute("class", "internal-note-link");
+        } else {
+          const href = el.getAttribute("href") ?? "";
+          if (/^(https?:|mailto:)/i.test(href)) {
+            copy.setAttribute("href", href);
+            copy.setAttribute("target", "_blank");
+            copy.setAttribute("rel", "noopener noreferrer");
+          }
         }
       }
       if (el.tagName === "UL" && el.hasAttribute("data-checklist")) copy.setAttribute("data-checklist", "");
@@ -75,6 +82,34 @@ export const wordCount = (html: string) => {
   const text = htmlToText(html);
   return text ? text.split(" ").length : 0;
 };
+
+/** HTML içerisinden diğer notlara verilen referansların kimliklerini (ID) çıkarır. */
+export function extractLinkedNoteIds(html: string): string[] {
+  if (typeof DOMParser === "undefined" || !html) return [];
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+  const ids = new Set<string>();
+  doc.querySelectorAll("a[data-note-id]").forEach((el) => {
+    const id = el.getAttribute("data-note-id");
+    if (id) ids.add(id);
+  });
+  return Array.from(ids);
+}
+
+/** Hedef nota referans veren (backlink) diğer notları döndürür. */
+export function getBacklinks(notes: Note[], targetNoteId: string): Note[] {
+  if (!targetNoteId) return [];
+  const activeNotes = notes.filter((n) => !n.deletedAt && n.id !== targetNoteId);
+  return activeNotes.filter((note) => {
+    const linkedIds = extractLinkedNoteIds(note.html);
+    return linkedIds.includes(targetNoteId);
+  });
+}
+
+/** Not bağlantısı HTML dizesi üretir. */
+export function createNoteLinkHtml(noteId: string, title: string): string {
+  const safeTitle = escapeHtml(title.trim() || "Başlıksız not");
+  return `<a href="#note-${noteId}" data-note-id="${noteId}" class="internal-note-link">@${safeTitle}</a>`;
+}
 
 export type NoteTemplate = {
   id: string;
@@ -439,6 +474,10 @@ export function htmlToMarkdown(html: string): string {
       case "LI":
         return childText;
       case "A": {
+        const noteId = el.getAttribute("data-note-id");
+        if (noteId) {
+          return `[[${childText || "Not"}]]`;
+        }
         const href = el.getAttribute("href") ?? "";
         return href ? `[${childText || href}](${href})` : childText;
       }
