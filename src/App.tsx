@@ -501,34 +501,38 @@ export default function App() {
               style={{ display: "none" }}
               onChange={handleImportFile}
             />
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="JSON dosyasından içe aktar"
-              title="JSON dosyasından içe aktar"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload size={19} />
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Tüm notları JSON olarak indir"
-              title="Tüm notları JSON olarak indir"
-              onClick={exportAllJson}
-            >
-              <Download size={19} />
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Seçili notu Markdown olarak indir"
-              title={selected ? "Seçili notu Markdown olarak indir" : "Not seçilmedi"}
-              disabled={!selected}
-              onClick={exportSelectedMarkdown}
-            >
-              <FileDown size={19} />
-            </button>
+            {currentView === "notes" && (
+              <>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="JSON dosyasından içe aktar"
+                  title="JSON dosyasından içe aktar"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload size={19} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Tüm notları JSON olarak indir"
+                  title="Tüm notları JSON olarak indir"
+                  onClick={exportAllJson}
+                >
+                  <Download size={19} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Seçili notu Markdown olarak indir"
+                  title={selected ? "Seçili notu Markdown olarak indir" : "Not seçilmedi"}
+                  disabled={!selected}
+                  onClick={exportSelectedMarkdown}
+                >
+                  <FileDown size={19} />
+                </button>
+              </>
+            )}
             <button
               type="button"
               className="icon-button"
@@ -538,9 +542,11 @@ export default function App() {
             >
               {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
             </button>
-            <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
-              <SquarePen size={19} />
-            </button>
+            {currentView === "notes" && (
+              <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
+                <SquarePen size={19} />
+              </button>
+            )}
           </div>
         </header>
         <div className="search">
