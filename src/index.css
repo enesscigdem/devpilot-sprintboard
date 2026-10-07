@@ -158,11 +158,20 @@ button { cursor: pointer; }
 }
 
 /* ---------- Etiket Filtreleri ---------- */
-.tag-filters, .tag-filter-list {
+.tag-filters, .tag-filter-list, .tag-scroll-container {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 6px;
   padding: 0 14px 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.tag-filters::-webkit-scrollbar,
+.tag-filter-list::-webkit-scrollbar,
+.tag-scroll-container::-webkit-scrollbar {
+  display: none;
 }
 
 .tag-filter-chip, .tag-pill, .tag-filter-btn {
@@ -177,6 +186,8 @@ button { cursor: pointer; }
   font-size: 12px;
   line-height: 1.2;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .tag-filter-chip:hover, .tag-pill:hover, .tag-filter-btn:hover {
