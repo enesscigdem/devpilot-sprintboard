@@ -212,7 +212,12 @@ export default function App() {
     if (saved === "light" || saved === "dark" || saved === "system") return saved;
     return "system";
   });
-  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("focus_mode") === "true";
+    }
+    return false;
+  });
   const [notes, setNotes] = useState<Note[]>(loadNotes);
   const [draft, setDraft] = useState<Note | null>(null);
   const [currentView, setCurrentView] = useState<"notes" | "trash">("notes");
@@ -299,13 +304,21 @@ export default function App() {
   }, [notes]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("focus_mode", isFocusMode.toString());
+    }
+  }, [isFocusMode]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isEditable = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
 
       if (event.key === "Escape") {
         setShowShortcuts(false);
-        setIsFocusMode(false);
+        if (isFocusMode) {
+          setIsFocusMode(false);
+        }
       }
 
       if (event.key === "?" && !isEditable) {
@@ -646,7 +659,17 @@ export default function App() {
 
   return (
     <div className={`app ${isFocusMode ? "focus-mode" : ""}`} data-pane={mobilePane} data-focus-mode={isFocusMode ? "true" : "false"}>
-      <aside className="sidebar" aria-label="Notlar" aria-hidden={isFocusMode}>
+      <button
+        type="button"
+        className="focus-mode-toggle"
+        aria-label={isFocusMode ? "Odak modundan çık" : "Odak moduna geç"}
+        aria-pressed={isFocusMode}
+        title={isFocusMode ? "Odak modundan çık (Esc)" : "Odak moduna geç"}
+        onClick={() => setIsFocusMode((prev) => !prev)}
+      >
+        {isFocusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+      </button>
+      <aside className="sidebar sidebar-collapsible" aria-label="Notlar" data-collapsed={isFocusMode}>
         <div className="sidebar-tabs" role="tablist" style={{ display: "flex", borderBottom: "1px solid var(--line)", padding: "8px 10px 0", gap: "4px" }}>
           <button
             type="button"
@@ -751,16 +774,7 @@ export default function App() {
               </>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={isFocusMode ? "Odak modundan çık" : "Odak modu"}
-                aria-expanded={!isFocusMode}
-                title={isFocusMode ? "Odak modundan çık" : "Odak modu"}
-                onClick={() => setIsFocusMode((prev) => !prev)}
-              >
-                {isFocusMode ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
-              </button>
+
               <button
                 type="button"
                 className="icon-button"
@@ -1013,24 +1027,6 @@ export default function App() {
       </aside>
 
       <main className="detail">
-        {isFocusMode && (
-          <button
-            type="button"
-            className="icon-button focus-mode-exit"
-            aria-label="Odak modundan çık"
-            title="Odak modundan çık"
-            style={{
-              position: "absolute",
-              top: "12px",
-              left: "12px",
-              zIndex: 30,
-              backgroundColor: "var(--hover)",
-            }}
-            onClick={() => setIsFocusMode(false)}
-          >
-            <Minimize2 size={18} />
-          </button>
-        )}
         {selected ? (
           <>
             <button type="button" className="back-button" onClick={() => {
