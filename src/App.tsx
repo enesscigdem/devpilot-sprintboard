@@ -708,7 +708,7 @@ export default function App() {
             <h1 style={{ whiteSpace: "nowrap" }}>{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}</h1>
             <span className="sidebar-count">{currentView === "trash" ? `${trashNotes.length} not` : `${realCount} not`}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
             <input
               ref={fileInputRef}
               type="file"
@@ -718,57 +718,61 @@ export default function App() {
             />
             {currentView === "notes" && (
               <>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="JSON dosyasından içe aktar"
-                  title="JSON dosyasından içe aktar"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={19} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Tüm notları JSON olarak indir"
-                  title="Tüm notları JSON olarak indir"
-                  onClick={exportAllJson}
-                >
-                  <Download size={19} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label="Seçili notu Markdown olarak indir"
-                  title={selected ? "Seçili notu Markdown olarak indir" : "Not seçilmedi"}
-                  disabled={!selected}
-                  onClick={exportSelectedMarkdown}
-                >
-                  <FileDown size={19} />
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "2px", paddingRight: "8px", borderRight: "1px solid var(--line)" }}>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="JSON dosyasından içe aktar"
+                    title="JSON dosyasından içe aktar"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Tüm notları JSON olarak indir"
+                    title="Tüm notları JSON olarak indir"
+                    onClick={exportAllJson}
+                  >
+                    <Download size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label="Seçili notu Markdown olarak indir"
+                    title={selected ? "Seçili notu Markdown olarak indir" : "Not seçilmedi"}
+                    disabled={!selected}
+                    onClick={exportSelectedMarkdown}
+                  >
+                    <FileDown size={17} />
+                  </button>
+                </div>
               </>
             )}
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={isFocusMode ? "Odak modundan çık" : "Odak modu"}
-              aria-expanded={!isFocusMode}
-              title={isFocusMode ? "Odak modundan çık" : "Odak modu"}
-              onClick={() => setIsFocusMode((prev) => !prev)}
-            >
-              {isFocusMode ? <Minimize2 size={19} /> : <Maximize2 size={19} />}
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`Tema değiştir (Mevcut: ${theme === "dark" ? "Koyu" : theme === "light" ? "Açık" : "Sistem"})`}
-              title={theme === "dark" ? "Tema: Koyu" : theme === "light" ? "Tema: Açık" : "Tema: Sistem"}
-              onClick={toggleTheme}
-            >
-              {theme === "dark" ? <Moon size={19} /> : theme === "light" ? <Sun size={19} /> : <Monitor size={19} />}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+                aria-expanded={!isFocusMode}
+                title={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+                onClick={() => setIsFocusMode((prev) => !prev)}
+              >
+                {isFocusMode ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={`Tema değiştir (Mevcut: ${theme === "dark" ? "Koyu" : theme === "light" ? "Açık" : "Sistem"})`}
+                title={theme === "dark" ? "Tema: Koyu" : theme === "light" ? "Tema: Açık" : "Tema: Sistem"}
+                onClick={toggleTheme}
+              >
+                {theme === "dark" ? <Moon size={17} /> : theme === "light" ? <Sun size={17} /> : <Monitor size={17} />}
+              </button>
+            </div>
             {currentView === "notes" && (
-              <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote}>
+              <button type="button" className="icon-button accent" aria-label="Yeni not" title="Yeni not" onClick={addNote} style={{ marginLeft: "4px" }}>
                 <SquarePen size={19} />
               </button>
             )}
