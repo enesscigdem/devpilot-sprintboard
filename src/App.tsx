@@ -1017,7 +1017,7 @@ export default function App() {
             style={{
               position: "absolute",
               top: "12px",
-              right: "12px",
+              left: "12px",
               zIndex: 30,
               backgroundColor: "var(--hover)",
             }}
