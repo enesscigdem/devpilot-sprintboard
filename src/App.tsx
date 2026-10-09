@@ -705,7 +705,6 @@ export default function App() {
         </div>
         <header className="sidebar-header" style={{ flexWrap: "nowrap", minWidth: 0 }}>
           <div className="sidebar-title" style={{ minWidth: 0, flexShrink: 0, whiteSpace: "nowrap" }}>
-            <h1 style={{ whiteSpace: "nowrap" }}>{currentView === "trash" ? "Çöp Kutusu" : "Notlar"}</h1>
             <span className="sidebar-count">{currentView === "trash" ? `${trashNotes.length} not` : `${realCount} not`}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
