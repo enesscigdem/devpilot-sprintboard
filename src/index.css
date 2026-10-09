@@ -114,12 +114,32 @@ button { cursor: pointer; }
 
 .app.focus-mode,
 .app[data-focus-mode="true"] {
-  grid-template-columns: 1fr;
+  grid-template-columns: 64px 1fr;
 }
 
 .app.focus-mode .sidebar,
 .app[data-focus-mode="true"] .sidebar {
-  display: none !important;
+  width: 64px;
+  min-width: 64px;
+}
+
+.app.focus-mode .sidebar > *:not(.sidebar-header),
+.app[data-focus-mode="true"] .sidebar > *:not(.sidebar-header) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app.focus-mode .sidebar-header,
+.app[data-focus-mode="true"] .sidebar-header {
+  padding: 22px 12px 10px;
+  justify-content: center;
+}
+
+.app.focus-mode .sidebar-title,
+.app.focus-mode .sidebar-count,
+.app[data-focus-mode="true"] .sidebar-title,
+.app[data-focus-mode="true"] .sidebar-count {
+  display: none;
 }
 
 .app.focus-mode .back-button,
@@ -135,11 +155,35 @@ button { cursor: pointer; }
   background: var(--sidebar-bg);
   border-right: 1px solid var(--line);
   overflow: hidden;
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar > * {
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-collapsible {
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+.sidebar-collapsed > *:not(.sidebar-header) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-collapsed:hover {
+  width: 280px;
+  min-width: 280px;
+}
+
+.sidebar-collapsed:hover > * {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .sidebar-header {
@@ -308,6 +352,66 @@ button { cursor: pointer; }
 
 /* ---------- Detay ---------- */
 .detail { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
+
+.focus-mode-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-2);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.focus-mode-toggle:hover {
+  background: var(--hover);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.focus-mode-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.app[data-focus-mode="true"] .focus-mode-toggle {
+  background: var(--accent);
+  color: #1d1d1f;
+  border-color: var(--accent);
+}
+
+.app:not([data-focus-mode="true"]) .focus-mode-toggle {
+  left: calc(280px + 16px);
+}
+
+.focus-mode-indicator {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 99;
+}
+
+.focus-mode-indicator.show {
+  opacity: 1;
+}
 
 .detail-empty {
   flex: 1; display: grid; place-content: center; justify-items: center; gap: 6px;
