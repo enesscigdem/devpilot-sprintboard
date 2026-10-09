@@ -646,7 +646,7 @@ export default function App() {
 
   return (
     <div className={`app ${isFocusMode ? "focus-mode" : ""}`} data-pane={mobilePane} data-focus-mode={isFocusMode ? "true" : "false"}>
-      <aside className="sidebar" aria-label="Notlar">
+      <aside className="sidebar" aria-label="Notlar" aria-hidden={isFocusMode}>
         <div className="sidebar-tabs" role="tablist" style={{ display: "flex", borderBottom: "1px solid var(--line)", padding: "8px 10px 0", gap: "4px" }}>
           <button
             type="button"
@@ -752,6 +752,7 @@ export default function App() {
               type="button"
               className="icon-button"
               aria-label={isFocusMode ? "Odak modundan çık" : "Odak modu"}
+              aria-expanded={!isFocusMode}
               title={isFocusMode ? "Odak modundan çık" : "Odak modu"}
               onClick={() => setIsFocusMode((prev) => !prev)}
             >
