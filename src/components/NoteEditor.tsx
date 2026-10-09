@@ -500,21 +500,24 @@ export default function NoteEditor({
           <div className="tool-group">
             {tool("Alıntı", Quote, () => toggleWrap("BLOCKQUOTE"), active.quote)}
             {tool("Kod bloğu", Code, () => toggleWrap("PRE"), active.code)}
+          </div>
+          <div className="tool-group">
             {tool("Bağlantı", Link2, addLink, active.link)}
             {tool("Tablo", Table, insertTable)}
             {tool("Ayırıcı çizgi", Minus, () => exec("insertHorizontalRule"))}
           </div>
-          <div className="tool-group" ref={templateMenuRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              className="tool"
-              aria-label="Hazır Şablonlar"
-              title="Hazır Şablonlar"
-              aria-expanded={showTemplateMenu}
-              onClick={() => setShowTemplateMenu((v) => !v)}
-            >
-              <LayoutTemplate size={17} strokeWidth={2} />
-            </button>
+          <div className="tool-group" style={{ position: "relative" }}>
+            <div ref={templateMenuRef} style={{ display: "contents" }}>
+              <button
+                type="button"
+                className="tool"
+                aria-label="Hazır Şablonlar"
+                title="Hazır Şablonlar"
+                aria-expanded={showTemplateMenu}
+                onClick={() => setShowTemplateMenu((v) => !v)}
+              >
+                <LayoutTemplate size={17} strokeWidth={2} />
+              </button>
             {showTemplateMenu && (
               <div
                 className="template-dropdown"
@@ -566,18 +569,18 @@ export default function NoteEditor({
                 ))}
               </div>
             )}
-          </div>
-          <div className="tool-group" ref={historyMenuRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              className="tool"
-              aria-label="Sürüm Geçmişi"
-              title="Sürüm Geçmişi"
-              aria-expanded={showHistory}
-              onClick={() => setShowHistory((v) => !v)}
-            >
-              <History size={17} strokeWidth={2} />
-            </button>
+            </div>
+            <div ref={historyMenuRef} style={{ display: "contents" }}>
+              <button
+                type="button"
+                className="tool"
+                aria-label="Sürüm Geçmişi"
+                title="Sürüm Geçmişi"
+                aria-expanded={showHistory}
+                onClick={() => setShowHistory((v) => !v)}
+              >
+                <History size={17} strokeWidth={2} />
+              </button>
             {showHistory && (
               <div
                 className="history-dropdown"
@@ -668,6 +671,7 @@ export default function NoteEditor({
                 )}
               </div>
             )}
+            </div>
           </div>
           <div className="tool-spacer" />
           <div className="tool-group">
